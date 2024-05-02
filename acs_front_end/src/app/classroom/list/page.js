@@ -81,10 +81,10 @@ export default async function roomList() {
       <div>
         <Topbar></Topbar>
       </div>
-      <div style={{ flex: 1 }}>
+      <div>
         <Nav />
       </div>
-      <div style={{ flex: 1 }}>
+      <div style={{ marginLeft: "15vw" }}>
         <Table columns={columns} dataSource={data} />
       </div>
     </div>
