@@ -1,38 +1,44 @@
 "use client";
 import { Menu } from "antd";
-import React from 'react';
+import React from "react";
 import { useState } from "react";
-import "./nav.css"
+import "./nav.css";
 
-export default function Nav({nowstate})
-{
-    const l=[]
+export default function Nav({ nowstate }) {
+  const l = [];
 
-    l.push( 
-    <li><a href="#"><div className="now">我的课表</div></a></li>
-    )
+  l.push(
+    <li>
+      <a href="/course">
+        <div className="now">教师课表</div>
+      </a>
+    </li>
+  );
 
-    l.push( 
-        <li><a href="#">more</a></li>
-        )
-    l.push( 
-        <li><a href="#">more</a></li>
-        )
-    l.push( 
-        <li><a href="#">more</a></li>
-        )
-    l.push( 
-        <li><a href="#">more</a></li>
-        )
-    return (
-        <div className="wi">
-            <div className="frame">
-                <ul>
-                   {l}
-                </ul>
-            </div>
-
-        </div>
-        
-    )
+  l.push(
+    <li>
+      <a href="/classroom">
+        <div>增加教室</div>
+      </a>
+    </li>
+  );
+  l.push(
+    <li>
+      <a href="./classroom/list">
+        <div>教室信息</div>
+      </a>
+    </li>
+  );
+  l.push(
+    <li>
+      <a href="/">首页</a>
+    </li>
+  );
+  return (
+    <div className="wi">
+      <div className="frame">
+        <ul>{l}</ul>
+      </div>
+    </div>
+  );
 }
