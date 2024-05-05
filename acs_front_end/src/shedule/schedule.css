@@ -1,0 +1,15 @@
+*{
+    box-sizing: border-box;
+}
+
+.schedule_list {
+    width: 82vw;
+    height: 90vh;
+    position: absolute;
+    left: 15vw;
+    top: 10vh;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: row;
+  }
+

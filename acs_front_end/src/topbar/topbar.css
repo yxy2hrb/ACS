@@ -1,0 +1,22 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+.wi{
+    height: 92vh;
+    position:absolute;
+    top:8vh;
+}
+.menu_all{
+    height: 8vh;
+    width: 100vw;
+    display: block;
+    font-size: larger;
+    text-align: left;
+    line-height: 8vh;
+    padding-left: 5vw;
+    background-color:aliceblue;
+    border-width: 2px;
+    border-style: solid;
+    box-sizing: border-box;
+}
