@@ -171,7 +171,6 @@ def update_classroom(id):
         print('An error occurred while trying to update classroom', e)
         return jsonify({"message": "An error occurred while trying to update classroom", "data": []}), 500
 
-# 获取教师课程信息
 @app.route('/api/teacher/courses/<int:teacher_id>', methods=['GET'])
 def get_courses(teacher_id):
     try:
@@ -183,8 +182,9 @@ def get_courses(teacher_id):
             classroom = next((item for item in local_db_classrooms if item['classroom_id'] == courses[i]['classroom']), None)
             campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
             teacher = next((item for item in local_db_teacher if item['teacher_id'] == courses[i]['teacher']), None)
+            time_slot = next((item for item in local_db_time_slots if item['time'] == courses[i]['time']), None)
 
-            if not teacher or not course or not classroom or not campus:
+            if not teacher or not course or not classroom or not campus or not time_slot:
                 continue
 
             result["courses"].append({
@@ -195,6 +195,7 @@ def get_courses(teacher_id):
                 "classroom": classroom['classroom_name'],
                 "campus": campus['name'],
                 "capacity": classroom['capacity'],
+                "time_slot": time_slot['time_slot'],
             })
 
         return jsonify(result)  # 返回结果到前端
