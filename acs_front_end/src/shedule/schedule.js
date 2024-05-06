@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useState ,useRef} from "react";
+import { useState ,useRef,useEffect} from "react";
 import Highlighter from 'react-highlight-words';
 import "./schedule.css";
 import { Select } from "antd";
@@ -71,9 +71,11 @@ export default function Schedule() {
        })
         
     }
+
     const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
+
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -245,6 +247,7 @@ export default function Schedule() {
 
       const [open, setOpen] = useState(false);
       const [open2, setOpen2] = useState(false);
+
       const [changeid,Setchangeid]=useState(-1);
 
       const showDrawer = (id) => {
@@ -379,7 +382,7 @@ export default function Schedule() {
         setOpen2(false)
       };
     
-     
+      
       const data = [
       
       ];
@@ -428,10 +431,20 @@ export default function Schedule() {
           })
            
         }
+
+        const [schedule_data,Setschedule_data]=useState(0)
+
+        useEffect(()=>{
+            Setschedule_data(data)
+        },[])
+
+
         const onChange_num = (value) => {
             console.log('changed', value);
             Setclassnumfilter(value)
           };
+
+
           const items = [
             {
               key: '1',
@@ -476,7 +489,7 @@ export default function Schedule() {
     
     return(
         <div className="schedule_list">
-            <Table style={{height:"100%",width:"100%"}}columns={columns} dataSource={data} />;
+            <Table style={{height:"100%",width:"100%"}}columns={columns} dataSource={schedule_data} />;
             <Drawer title="修改时间" onClose={onClose} open={open}>
               <Table columns={columns_time} dataSource={data_time} />;
             </Drawer>

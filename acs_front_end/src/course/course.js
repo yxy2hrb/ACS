@@ -4,6 +4,7 @@ import { useState ,useEffect} from "react";
 import "./course.css";
 import { Select } from "antd";
 import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
+import axios from "axios"
 export default function Course() {
   const tmp = [
     {
@@ -49,73 +50,44 @@ export default function Course() {
     "周一","周二","周三","周四","周五",
   ];
 useEffect(() => {
-      //   const data={
-      //     deviceid:id,
-      //  }
-      //   axios.post('http://localhost:1234/api/mydevice/'+id, data).then(  response => {
-      //       console.log(response.data)
-      //    if(response.data.success)
-      //    {
-      //          Setmsg(response.data.data)
-      //          let tmpmsg=response.data.data
-      //          let device_msg=[]
-      //          let tpath=[]
-      //          var i=0;
-      //          var m=Math.min(tmpmsg.length,i+7)
-      //          for (i;i<m;i++)
-      //          {
-      //              device_msg.push(
-      //                  <div>
-      //                      <Marker position={{lng:tmpmsg[i].lng,lat:tmpmsg[i].lat}}
-      //                          icon={tmpmsg[i].alert?'simple_red':'simple_blue'}
-      //                          viewportOptions={{
-      //                          zoomFactor: -12
-      //                          }}></Marker>
-      //                  </div>
-      //                  )
-      //                  tpath.push(
-      //                   {lng:tmpmsg[i].lng,lat:tmpmsg[i].lat}
-      //               )
-      //          }
-      //          if(tmpmsg.length>0)
-      //          {
-      //           Setpath(tpath)
-      //          }
-                     
-      //           Settrace(device_msg)
-             
-      //    } 
-      //   }).catch(err => {
-      //     console.log(err);
-      //   });
-     
-      const course_html=[]
-      for(let i=0;i<5;i++)
-      {
-        let onecontent=[]
-        onecontent.push(<th>{time_num2str[i]}</th>)
-        for(let j=0;j<5;j++)
-        {
-          let f=0;
-          for(let l=0;l<course.length;l++){
-            if(course[l].time_slot==(j+1)*10+i+1){
-              onecontent.push(<td onClick={()=>{SetNowCourse(l)}}><div>{course[l].name}</div><div>{course[l].classroom}</div></td>)
-              f=1;
-              break;
+   
+        axios.get('http://localhost:5000/api/teacher/courses/1').then(  response => {
+            console.log(response.data)
+            SetCourse(response.data.courses);
+            const course_html=[]
+            for(let i=0;i<5;i++)
+            {
+              let onecontent=[]
+              onecontent.push(<th>{time_num2str[i]}</th>)
+              for(let j=0;j<5;j++)
+              {
+                let f=0;
+                for(let l=0;l<response.data.courses.length;l++){
+                  if(response.data.courses[l].time_slot==(j+1)*10+i+1){
+                    onecontent.push(<td onClick={()=>{SetNowCourse(l)}}><div>{response.data.courses[l].name}</div><div>{response.data.courses[l].classroom}</div></td>)
+                    f=1;
+                    break;
+                  }
+                }
+                if(f==0){
+                  onecontent.push(<td></td>)
+                }
+              }
+              course_html.push(<tr>
+                {onecontent}
+              </tr>)
             }
-          }
-          if(f==0){
-            onecontent.push(<td></td>)
-          }
-        }
-        course_html.push(<tr>
-          {onecontent}
-        </tr>)
-      }
-       console.log(course_html)
-       Setcoursehtml(course_html)
+             console.log(course_html)
+             Setcoursehtml(course_html)
+        }).catch(err => {
+          console.log(err);
+        });
+     
+
+   
       }, [])
   
+
       useEffect(()=>{
         const nowcourse_html=[]
 
