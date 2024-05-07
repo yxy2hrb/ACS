@@ -4,9 +4,11 @@ import { useState ,useRef,useEffect} from "react";
 import Highlighter from 'react-highlight-words';
 import "./schedule.css";
 import { Select } from "antd";
-import { Button, Drawer, Menu, Space, Table, Tag ,Input,Form,InputNumber,Collapse} from "antd";
+import { Button, Drawer, Menu, Space, Table, Tag ,Input,Form,InputNumber,Collapse,message} from "antd";
 import { SearchOutlined } from '@ant-design/icons';
+import axios from "axios";
 const { Option } = Select;
+
 export default function Schedule() {
     const timefilter=[]
     const weekday=[
@@ -260,6 +262,8 @@ export default function Schedule() {
 
 
       const [classnumfilter,Setclassnumfilter]=useState(0)
+      const [classequfilter,Setclassequfilter]=useState([])
+      
       const showDrawer2 = (id) => {
         Setchangeid(id);
        // console.log(changeid);
@@ -362,7 +366,7 @@ export default function Schedule() {
           key: "action",
           render: (_, record) => (
             <Space size="middle">
-              <a >确认</a>
+              <a onClick={()=>change_class(record.classroom_id)}>确认</a>
             </Space>
           ),
         },
@@ -372,10 +376,13 @@ export default function Schedule() {
           class: "曹西201",
           capti: 30,
           equip: ["黑板","投影仪"],
-          campus:"紫金港"
+          campus:"紫金港",
+          classroom_id:2
         },
       ];
 
+
+      
 
       const onClose = () => {
         setOpen(false);
@@ -409,42 +416,74 @@ export default function Schedule() {
           })
            
         }
-        for(let i=0;i<10;i++)
-        {data.push( {
-            Schedule_id:i+20,
-            teacher:"王章野",
-            time_slot:"周四8:00-9:30",
-            course: 'software engineering',
-            classroom:"曹西201",
-            campus:"紫金港"
-          })
-           
-        }
-        for(let i=0;i<10;i++)
-        {data.push( {
-            Schedule_id:i+30,
-            teacher:"王章野",
-            time_slot:"周四14:00-15:30",
-            course: 'software engineering',
-            classroom:"曹西201",
-            campus:"紫金港"
-          })
-           
-        }
+       
 
         const [schedule_data,Setschedule_data]=useState(0)
-
+        const [class_data_state,Setclassdata]=useState([])
+        //获取所有排课信息
         useEffect(()=>{
-            Setschedule_data(data)
+          Setschedule_data(data)
+          axios.get('http://localhost:5000/api/schedule').then(  response => {
+            console.log(response.data)
+           
+        }).catch(err => {
+          console.log(err);
+        });
         },[])
 
 
         const onChange_num = (value) => {
-            console.log('changed', value);
+            //console.log('changed', value);
             Setclassnumfilter(value)
           };
+          const handleequChange = (value) => {
+            //console.log(`selected ${value}`);
+            Setclassequfilter(value)
+          };
 
+        //获取可用教室
+        useEffect(()=>{
+         
+          if(changeid!=-1){
+            Setclassdata(data_class)
+            const data={
+              Schedule_id:changeid,
+              min_capacity:classnumfilter,
+              min_equip:classequfilter
+            }
+            console.log(data)
+          //   axios.post('http://localhost:5000/api/teacher/change/class').then(  response => {
+          //     console.log(response.data)
+              
+          // }).catch(err => {
+          //   console.log(err);
+          // });
+          }
 
+        },[changeid,classnumfilter,classequfilter])
+
+        //确认修改教室
+      const change_class=(class_id)=>{
+        console.log(class_id)
+        const data={
+          schedule_id:changeid,
+          classroom_id:class_id
+        }
+
+        axios.post('/api/change/schedule/classroom',data).then(  response => {
+          console.log(response.data)
+
+         if(response.data.success==1){
+            alert("success")
+         }else{
+          alert("failed")
+         }
+      }).catch(err => {
+         alert("failed")
+        console.log(err);
+      
+      });
+      }
           const items = [
             {
               key: '1',
@@ -463,27 +502,26 @@ export default function Schedule() {
                     label="教室设备"  
                     name="minequip"  
                     rules={[{ required: false, message: '请选择教室设备' }]}  
+                    
                   >  
-                    <Select mode="multiple">  
+                    <Select onChange={handleequChange} mode="multiple">  
                       <Option value="投影仪">投影仪</Option>  
                       <Option value="白板">白板</Option>  
                       <Option value="电脑">电脑</Option>  
                       <Option value="fpga开发板">fpga开发板</Option>  
                       <Option value="实验台">实验台</Option>  
-                    </Select>  
-                  </Form.Item>    
-                  <Form.Item className="align-right">  
-                  <Button type="primary" htmlType="submit" className='confirm'>  
-                    确认  
-                  </Button>  
+                    </Select >  
+                  </Form.Item>
+
+
                
-                </Form.Item>  
+                 
               </Form>,
             },
             {
               key: '2',
               label: '可用教室列表',
-              children: <Table columns={columns_class} dataSource={data_class} />,
+              children: <Table columns={columns_class} dataSource={class_data_state} />,
             },
           ];
     

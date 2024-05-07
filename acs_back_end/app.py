@@ -223,7 +223,6 @@ def get_courses(teacher_id):
             campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
             teacher = next((item for item in local_db_teacher if item['teacher_id'] == courses[i]['teacher']), None)
             time_slot = next((item for item in local_db_time_slots if item['time'] == courses[i]['time']), None)
-
             if None in [teacher, course, classroom, campus, time_slot]:
                 continue
 
@@ -235,7 +234,6 @@ def get_courses(teacher_id):
                 "classroom": classroom['classroom_name'],
                 "campus": campus['name'],
                 "capacity": classroom['capacity'],
-                "time_slot": time_slot['time_slot'],
             })
 
         return jsonify(result)  # 返回结果到前端
@@ -452,4 +450,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
