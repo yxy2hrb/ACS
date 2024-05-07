@@ -15,44 +15,54 @@ export default function Schedule() {
         {
             text: '周一',
             value: '周一',
+            label: '周一',
           },
           {
               text: '周二',
               value: '周二',
+              label: '周二',
             },
             {
               text: '周三',
               value: '周三',
+              label: '周三',
             },
             {
               text: '周四',
               value: '周四',
+              label: '周四',
             },
             {
               text: '周五',
               value: '周五',
+              label: '周五',
             }
     ]
     const oneday=[
         {
             text: '8:00-9:30',
             value: '8:00-9:30',
+            label: '8:00-9:30',
           },
           {
             text: '10:00-11:30',
             value: '10:00-11:30',
+            label: '10:00-11:30',
           },
           {
               text: '14:00-15:30',
               value: '14:00-15:30',
+              label: '14:00-15:30',
             },
             {
               text: '16:00-17:30',
               value: '16:00-17:30',
+              label: '16:00-17:30',
             },
             {
               text: '19:00-20:30',
               value: '19:00-20:30',
+              label: '19:00-20:30',
             }
     ]
     for(let i=0;i<5;i++)
@@ -251,6 +261,8 @@ export default function Schedule() {
       const [open2, setOpen2] = useState(false);
 
       const [changeid,Setchangeid]=useState(-1);
+      const [selecttime1,Settime1]=useState(0)
+      const [selecttime2,Settime2]=useState(0)
 
       const showDrawer = (id) => {
 
@@ -267,54 +279,16 @@ export default function Schedule() {
       const showDrawer2 = (id) => {
         Setchangeid(id);
        // console.log(changeid);
-
+        
         setOpen2(true);
         setOpen(false);
       };
-    
+      const onClose = () => {
+        setOpen(false);
+        setOpen2(false)
+      };
 
-      const columns_time=[
-        {
-            title:"星期",
-            dataIndex: "weekday",
-            key: "weekday",
-           
-        },
-        {
-            title:"时间",
-            dataIndex: "daytime",
-            key: "daytime",
-        },
-        {
-            title: "Action",
-            key: "action",
-            render: (_, record) => (
-              <Space size="middle">
-                <a >确认</a>
-              </Space>
-            ),
-          },
-
-      ]
-      const data_time=[
-        {
-            weekday:"周一",
-            daytime:"10:00-11:30"
-        },
-        {
-            weekday:"周二",
-            daytime:"10:00-11:30"
-        },
-        {
-            weekday:"周三",
-            daytime:"10:00-11:30"
-        },
-        {
-            weekday:"周四",
-            daytime:"10:00-11:30"
-        },
-
-      ]
+     
       const columns_class = [
         {
           title: "名称",
@@ -362,7 +336,7 @@ export default function Schedule() {
                 onFilter: (value, record) => record.campus.indexOf(value) === 0,
         },
         {
-          title: "Action",
+          title: "操作",
           key: "action",
           render: (_, record) => (
             <Space size="middle">
@@ -371,65 +345,88 @@ export default function Schedule() {
           ),
         },
       ];
-      const data_class = [
+    
+
+      const columns_class_time = [
         {
-          class: "曹西201",
-          capti: 30,
-          equip: ["黑板","投影仪"],
-          campus:"紫金港",
-          classroom_id:2
+          title: "名称",
+          dataIndex: "class",
+          key: "class",
+          ...getColumnSearchProps('class'),
+        },
+        {
+          title: "容量",
+          dataIndex: "capti",
+          key: "capti",
+          sorter: (a, b) => a.capti - b.capti,
+        },
+        {
+          title: "设备",
+          dataIndex: "equip",
+          key: "equip",
+          render: (_, { equip }) => (
+            <>
+              {equip .map((tag) => {
+                let color = 'geekblue'
+              
+                return (
+                  <Tag color={color} key={tag}>
+                    {tag.toUpperCase()}
+                  </Tag>
+                );
+              })}
+            </>
+          ),
+        },
+        {
+            title:"校区",
+            dataIndex: "campus",
+            key: "campus",
+            filters: [
+                {
+                  text: '紫金港',
+                  value: '紫金港',
+                },
+                {
+                  text: '玉泉',
+                  value: '玉泉',
+                },],
+                onFilter: (value, record) => record.campus.indexOf(value) === 0,
+        },
+        {
+          title: "操作",
+          key: "action",
+          render: (_, record) => (
+            <Space size="middle">
+              <a onClick={()=>change_time(record.classroom_id)}>确认</a>
+            </Space>
+          ),
         },
       ];
-
-
       
 
-      const onClose = () => {
-        setOpen(false);
-        setOpen2(false)
-      };
+   
     
       
       const data = [
       
       ];
-      
-      for(let i=0;i<10;i++)
-        {data.push( {
-            Schedule_id:i,
-            teacher:"王章野",
-            time_slot:"周五10:00-11:30",
-            course: 'software engineering',
-            classroom:"曹西201",
-            campus:"紫金港"
-          })
-           
-        }
-        for(let i=0;i<10;i++)
-        {data.push( {
-            Schedule_id:i+10,
-            teacher:"王章野",
-            time_slot:"周四10:00-11:30",
-            course: 'software engineering',
-            classroom:"曹西201",
-            campus:"紫金港"
-          })
-           
-        }
+     
        
-
+        const [Newst,SetNew]=useState(0)
         const [schedule_data,Setschedule_data]=useState(0)
         const [class_data_state,Setclassdata]=useState([])
         //获取所有排课信息
         useEffect(()=>{
-          Setschedule_data(data)
+          SetNew(0)
+          //Setschedule_data(data)
           axios.get('http://localhost:5000/api/schedule').then(  response => {
             console.log(response.data)
-           
+            Setschedule_data(response.data.schedules)
         }).catch(err => {
           console.log(err);
         });
-        },[])
+        },[Newst])
 
 
         const onChange_num = (value) => {
@@ -443,37 +440,71 @@ export default function Schedule() {
 
         //获取可用教室
         useEffect(()=>{
-         
+        
           if(changeid!=-1){
-            Setclassdata(data_class)
+            
             const data={
               Schedule_id:changeid,
               min_capacity:classnumfilter,
               min_equip:classequfilter
             }
-            console.log(data)
-          //   axios.post('http://localhost:5000/api/teacher/change/class').then(  response => {
-          //     console.log(response.data)
-              
-          // }).catch(err => {
-          //   console.log(err);
-          // });
+            // const data_class = [
+            //   {
+            //     class: "曹西201",
+            //     capti: 30,
+            //     equip: ["黑板","投影仪"],
+            //     campus:"紫金港",
+            //     classroom_id:2
+            //   },
+            // ];
+            axios.post('http://localhost:5000/api/teacher/change/class',data).then(  response => {
+              //console.log(response.data.classes)
+              const data_class2=[]
+              const campusid2str=[
+                "紫金港",
+                "玉泉",
+                "西溪",
+                "华家池",
+                "之江",
+                "舟山",
+                "海宁"
+              ]
+              for(let i=0;i<response.data.classes.length;i++)
+              {
+                data_class2.push({
+                    class:response.data.classes[i]["classroom_name"],
+                    classroom_id:response.data.classes[i]["class_id"],
+                    campus:campusid2str[response.data.classes[i]["campus_id"]],
+                    capti:response.data.classes[i]["capacity"],
+                    equip:response.data.classes[i]["equipment"]
+                })
+              }
+              console.log(data_class2)
+              Setclassdata(data_class2)
+          }).catch(err => {
+            console.log(err);
+          });
           }
 
         },[changeid,classnumfilter,classequfilter])
 
+      
         //确认修改教室
       const change_class=(class_id)=>{
+
         console.log(class_id)
         const data={
           schedule_id:changeid,
           classroom_id:class_id
         }
 
-        axios.post('/api/change/schedule/classroom',data).then(  response => {
+        axios.post('http://localhost:5000/api/change/schedule/classroom',data).then(  response => {
           console.log(response.data)
 
          if(response.data.success==1){
+            onClose()
+            SetNew(1)
+            Setchangeid(-1)
             alert("success")
          }else{
           alert("failed")
@@ -524,12 +555,172 @@ export default function Schedule() {
               children: <Table columns={columns_class} dataSource={class_data_state} />,
             },
           ];
+          
+          const options1=[  {
+            value: 1,
+            label: '周一',
+          },
+          {
+              value: 2,
+              label: '周二',
+            },
+            {
+              value: 3,
+              label: '周三',
+            },
+            {
+              value: 4,
+              label: '周四',
+            },
+            {
+              value: 5,
+              label: '周五',
+            }]
+            const options2=[
+              {
+                  value: 1,
+                  label: '8:00-9:30',
+                },
+                {
+
+                  value: 2,
+                  label: '10:00-11:30',
+                },
+                {
+
+                    value: 3,
+                    label: '14:00-15:30',
+                  },
+                  {
+
+                    value: 4,
+                    label: '16:00-17:30',
+                  },
+                  {
+
+                    value: 5,
+                    label: '19:00-20:30',
+                  }
+          ]
+          const change_time1=(value)=>{
+            Settime1(value)
+          }
+          const change_time2=(value)=>{
+            Settime2(value)
+          }
+
+          const [class_data_time,Setclasstime]=useState([])
+
+          //获取可用教室(时间)
+          useEffect(()=>{
+            if(selecttime1!=0&&selecttime2!=0){
+              const data={
+                schedule_id:changeid,
+                time_slot:selecttime1*10+selecttime2
+              }
+              console.log(data)
+              axios.post('http://localhost:5000//api/teacher/change/time',data).then(  response => {
+                console.log(response.data)
+                const data_class2=[]
+                const campusid2str=[
+                  "紫金港",
+                  "玉泉",
+                  "西溪",
+                  "华家池",
+                  "之江",
+                  "舟山",
+                  "海宁"
+                ]
+                for(let i=0;i<response.data.classes.length;i++)
+                {
+                  data_class2.push({
+                      class:response.data.classes[i]["classroom_name"],
+                      classroom_id:response.data.classes[i]["class_id"],
+                      campus:campusid2str[response.data.classes[i]["campus_id"]],
+                      capti:response.data.classes[i]["capacity"],
+                      equip:response.data.classes[i]["equipment"]
+                  })
+                }
+                console.log(data_class2)
+                Setclasstime(data_class2)
+             
+            }).catch(err => {
+              console.log(err);
+            
+            });
+            }
+
+          },[selecttime1,selecttime2])
+          //确认修改时间
+          const change_time=(class_id)=>{
+
+
+            const data={
+              schedule_id:changeid,
+              classroom_id:class_id,
+              time_slot:selecttime1*10+selecttime2
+            }
+            console.log(data)
+            axios.post('http://localhost:5000/api/change/schedule/time',data).then(  response => {
+              console.log(response.data)
     
+             if(response.data.success==1){
+                onClose()
+                SetNew(1)
+                Setchangeid(-1)
+                alert("success")
+             }else{
+              alert(response.data.message)
+             }
+          }).catch(err => {
+             alert("failed")
+            console.log(err);
+          
+          });
+          }
+
+
+          const items_time=[
+            {
+              key: '1',
+              label: '选择时间',
+
+              children: 
+              <div>
+                <Select
+              onChange={change_time1}
+              style={{
+                width: 200,
+              }}
+              options={options1}
+            />
+                <Select
+              onChange={change_time2}
+              style={{
+                width: 200,
+              }}
+              options={options2}
+            />
+                </div>
+            
+            ,
+            },
+            {
+              key: '2',
+              label: '可用教室列表',
+              children: <Table columns={columns_class_time} dataSource={class_data_time} />,
+            }
+            
+            ,
+          ]
     return(
         <div className="schedule_list">
             <Table style={{height:"100%",width:"100%"}}columns={columns} dataSource={schedule_data} />;
-            <Drawer title="修改时间" onClose={onClose} open={open}>
-              <Table columns={columns_time} dataSource={data_time} />;
+            <Drawer width={"600px"} title="修改时间" onClose={onClose} open={open}>
+
+            <Collapse accordion items={items_time} defaultActiveKey={'1'}  />
+
+
             </Drawer>
             <Drawer width={"600px"} title="修改教室" onClose={onClose} open={open2}>
 
