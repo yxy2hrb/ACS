@@ -267,13 +267,16 @@ def change_teacher_time():
         all_classrooms = local_db_classrooms
 
         # 筛选出在目标时间没有被占用的教室
-        available_classrooms = [classroom['classroom_id'] for classroom in all_classrooms if classroom['classroom_id'] not in target_classrooms]
+        available_classrooms = [classroom for classroom in all_classrooms if classroom['classroom_id'] not in target_classrooms]
 
         # 检查 available_classrooms 是否为空
         if len(available_classrooms) == 0:
             return jsonify({"success": False,"message":"No available classrooms."}), 200
 
-        return jsonify({"success": True, "classrooms": available_classrooms}), 200
+        # 将 available_classrooms 转换为所需的格式
+        available_classrooms_new = [{"campus_id": classroom['campus_id'], "capacity": classroom['capacity'], "class_id": classroom['classroom_id'], "classroom_name": classroom['classroom_name'], "equipment": classroom['equipment']} for classroom in available_classrooms]
+
+        return jsonify({"success": True, "classes": available_classrooms_new}), 200
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB"}), 500
