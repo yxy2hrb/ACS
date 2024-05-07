@@ -306,7 +306,7 @@ def change_teacher_class():
         for c in available_classes:
             new_c = c.copy()  # 创建一个新的字典
             new_c.pop('_id', None)  # 删除 _id 字段
-            new_c.pop('classroom_name', None)  # 删除 classroom_name 字段
+         #   new_c.pop('classroom_name', None)  # 删除 classroom_name 字段
             new_c['class_id'] = new_c.pop('classroom_id', None)  # 将 'classroom_id' 改为 'class_id'
             available_classes_new.append(new_c)
 
