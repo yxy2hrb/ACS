@@ -5,6 +5,7 @@ from flask_cors import CORS, cross_origin
 from genetic import schedule_interface
 import copy
 import threading
+import time
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -28,6 +29,31 @@ local_db_campus = list(campus_collection.find({}))
 local_db_teacher = list(teacher_collection.find({}))
 local_db_classrooms = list(classrooms_collection.find({}))
 local_db_time_slots = list(time_slots_collection.find({}))  # 新增
+
+# 创建一个锁
+data_lock = threading.Lock()
+
+# 启动一个新的后台线程，定期从数据库中获取更新的数据
+def update_local_db():
+    while True:
+        with data_lock:  # 获取锁
+            local_db_schedule_res[:] = list(schedule_res_collection.find({}))
+            local_db_courses[:] = list(courses_collection.find({}))
+            local_db_campus[:] = list(campus_collection.find({}))
+            local_db_teacher[:] = list(teacher_collection.find({}))
+            local_db_classrooms[:] = list(classrooms_collection.find({}))
+            local_db_time_slots[:] = list(time_slots_collection.find({}))  # 新增
+        print("Updated local database at", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))  # 打印更新时间
+        time.sleep(60)  # 每60秒更新一次数据
+
+update_thread = threading.Thread(target=update_local_db)
+update_thread.start()
+
+# 在后台下载排课表到本地
+def update_local_schedule():
+    global local_db_schedule_res  # 声明全局变量
+    with data_lock:  # 获取锁
+        local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
 
 # 获取课室信息
 @app.route('/api/classrooms', methods=['GET'])
@@ -65,7 +91,7 @@ def create_classroom():
 
         # 查询 campus_id
         campus = next((item for item in local_db_campus if item["name"] == classroom_info['campus']), None)
-        if not campus:
+        if campus is None:
             raise Exception('Campus not found')
         campus_id = campus['campus_id']
 
@@ -83,7 +109,7 @@ def create_classroom():
 
         # 检查是否已经存在具有相同 classroom_name 和 campus_id 的教室
         existing_classroom = next((item for item in local_db_classrooms if item["classroom_name"] == classroom_info['classroom_name'] and item["campus_id"] == campus_id), None)
-        if existing_classroom:
+        if existing_classroom is not None:
             # 如果 classroom_name 和 campus_id 都相同，拒绝插入新的教室
             return jsonify({"message": "Classroom with the same name and campus already exists. Insertion is denied.", "data": []}), 400
         else:
@@ -91,9 +117,10 @@ def create_classroom():
             result = classrooms_collection.insert_one(classroom_info)
             # 在后台更新本地数据库
             def update_local_db():
-                # 从 MongoDB 获取新插入的教室的完整信息
-                new_classroom = classrooms_collection.find_one({'_id': result.inserted_id})
-                local_db_classrooms.append(new_classroom)
+                with data_lock:  # 获取锁
+                    # 从 MongoDB 获取新插入的教室的完整信息
+                    new_classroom = classrooms_collection.find_one({'_id': result.inserted_id})
+                    local_db_classrooms.append(new_classroom)
             threading.Thread(target=update_local_db).start()
             classroom_info.pop('_id', None)  # 删除 _id 字段
             return jsonify({"message": f"Successfully inserted item with _id: {str(result.inserted_id)}", "data": [classroom_info]}), 201
@@ -112,15 +139,15 @@ def delete_classroom(id):
             return jsonify({"message": f"No classroom found with id: {id}", "data": []}), 404
         else:
             # 如果成功删除教室，更新本地数据库
-            local_db_classrooms[:] = [d for d in local_db_classrooms if d.get('classroom_id') != id]
+            with data_lock:  # 获取锁
+                local_db_classrooms[:] = [d for d in local_db_classrooms if d.get('classroom_id') != id]
             # 在后台调用遗传算法重新排课
             threading.Thread(target=schedule_interface).start()
             
             # 在后台下载排课表到本地
-            def update_local_schedule():
-                local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
+            update_thread = threading.Thread(target=update_local_schedule)  # 创建新线程
+            update_thread.start()  # 开始新线程
             
-            threading.Thread(target=update_local_schedule).start()
             return jsonify({"message": f"Successfully deleted classroom with id: {id}", "data": []}), 200
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
@@ -156,22 +183,34 @@ def update_classroom(id):
             # 如果没有找到匹配的教室，返回 404 状态码
             return jsonify({"message": f"No classroom found with id: {id}", "data": []}), 404
         else:
+            # 检查新的数据是否与现有的数据相同
+            if classroom['classroom_name'] == classroom_name and classroom['campus_id'] == campus_id and classroom['equipment'] == equipment:
+                return jsonify({"message": "The classroom information is already up to date", "data": []}), 400
+
             # 更新教室信息
             classrooms_collection.update_one({'classroom_id': id}, {'$set': update_data})
             # 在后台调用遗传算法重新排课
             threading.Thread(target=schedule_interface).start()
-            # 在后台下载排课表到本地
-            def update_local_schedule():
-                local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
             
-            threading.Thread(target=update_local_schedule).start()
+            # 更新本地数据
+            def update_local_db():
+                with data_lock:  # 获取锁
+                    # 从 MongoDB 获取新插入的教室的完整信息
+                    updated_classroom = classrooms_collection.find_one({'classroom_id': id})
+                    index = next((index for (index, d) in enumerate(local_db_classrooms) if d["classroom_id"] == id), None)
+                    local_db_classrooms[index] = updated_classroom
+            threading.Thread(target=update_local_db).start()
+            
+            # 在后台下载排课表到本地
+            update_thread = threading.Thread(target=update_local_schedule)  # 创建新线程
+            update_thread.start()  # 开始新线程
+            
             # 如果成功更新教室信息，返回 200 状态码
             return jsonify({"message": f"Successfully updated classroom with id: {id}", "data": []}), 200
     except Exception as e:
         print('An error occurred while trying to update classroom', e)
         return jsonify({"message": "An error occurred while trying to update classroom", "data": []}), 500
 
-# 获取教师课程信息
 @app.route('/api/teacher/courses/<int:teacher_id>', methods=['GET'])
 def get_courses(teacher_id):
     try:
@@ -183,8 +222,8 @@ def get_courses(teacher_id):
             classroom = next((item for item in local_db_classrooms if item['classroom_id'] == courses[i]['classroom']), None)
             campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
             teacher = next((item for item in local_db_teacher if item['teacher_id'] == courses[i]['teacher']), None)
-
-            if not teacher or not course or not classroom or not campus:
+            time_slot = next((item for item in local_db_time_slots if item['time'] == courses[i]['time']), None)
+            if None in [teacher, course, classroom, campus, time_slot]:
                 continue
 
             result["courses"].append({
@@ -258,23 +297,28 @@ def change_teacher_class():
 
         # 获取当前课程的时间
         current_schedule = next((item for item in local_db_schedule_res if item['schedule_id'] == schedule_id), None)
-        current_time = current_schedule['time'] if current_schedule else None
+        current_time = current_schedule.get('time') if current_schedule else None
 
         # 检查教室是否在该时间段被其他课程占用
         for c in available_classes[:]:
-            classroom_schedule = next((item for item in local_db_schedule_res if item['classroom'] == c['classroom_id'] and item['time'] == current_time), None)
-            if classroom_schedule:
-                available_classes.remove(c)  # 如果教室在这个时间段被占用，那么从可用教室列表中移除这个教室
+            classroom_id = c.get('classroom_id')
+            if classroom_id is not None:
+                classroom_schedule = next((item for item in local_db_schedule_res if item['classroom'] == classroom_id and item['time'] == current_time), None)
+                if classroom_schedule is not None:
+                    available_classes.remove(c)  # 如果教室在这个时间段被占用，那么从可用教室列表中移除这个教室
 
+        available_classes_new = []
         for c in available_classes:
-            c.pop('_id', None)  # 删除 _id 字段
-            c.pop('classroom_name', None)  # 删除 classroom_name 字段
-            c['class_id'] = c.pop('classroom_id', None)  # 将 'classroom_id' 改为 'class_id'
+            new_c = c.copy()  # 创建一个新的字典
+            new_c.pop('_id', None)  # 删除 _id 字段
+            new_c.pop('classroom_name', None)  # 删除 classroom_name 字段
+            new_c['class_id'] = new_c.pop('classroom_id', None)  # 将 'classroom_id' 改为 'class_id'
+            available_classes_new.append(new_c)
 
-        if len(available_classes) == 0:
+        if len(available_classes_new) == 0:
             return jsonify({"success": False})  # 没有合适的教室
         else:
-            return jsonify({"success": True, "classes": available_classes})  # 显示可切换的教室
+            return jsonify({"success": True, "classes": available_classes_new})  # 显示可切换的教室
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB"}), 500
@@ -289,24 +333,24 @@ def change_schedule_time():
 
     # 从 time_slots 集合中查找对应的时间字符串
     time_slot = next((item['time'] for item in local_db_time_slots if item['time_slot'] == time_slot_id), None)
-    if not time_slot:
-        return jsonify(success=-1, message="Time slot not found")  # Time slot not found
+    if time_slot is None:
+        return jsonify(success=False, message="Time slot not found")  # Time slot not found
 
     try:
         # Check if the classroom is occupied at this time slot
         class_schedule = next((item for item in local_db_schedule_res if item['classroom'] == schedule_id and item['time'] == time_slot), None)
-        if class_schedule:
-            return jsonify(success=-1)  # Classroom time conflict
+        if class_schedule is not None:
+            return jsonify(success=False,message = "Classroom time conflict")  # Classroom time conflict
 
         # Update the schedule
         schedule = next((item for item in local_db_schedule_res if item['schedule_id'] == schedule_id), None)
-        if schedule:
+        if schedule is not None:
             schedule['time'] = time_slot
             schedule_res_collection.update_one({'schedule_id': schedule_id}, {'$set': {'time': time_slot}})  # Update MongoDB
             schedule.pop('_id', None)  # 删除 _id 字段
-            return jsonify(success=1, schedule=schedule)  # Return the modified schedule item
+            return jsonify(success=True)  # Return the modified schedule item
         else:
-            return jsonify(success=-1, message="Schedule not found")  # Schedule not found
+            return jsonify(success=False, message="Schedule not found")  # Schedule not found
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify(message='An error occurred while trying to connect to MongoDB'), 500
@@ -318,39 +362,87 @@ def change_schedule_classroom():
     schedule_id = data['schedule_id']
     classroom_id = data['classroom_id']
 
+    # 从 classrooms 集合中查找对应的教室
+    classroom = next((item for item in local_db_classrooms if item['classroom_id'] == classroom_id), None)
+    if classroom is None:
+        return jsonify(success=False, message="Classroom not found")  # Classroom not found
+
     try:
         # Check if the classroom is occupied at this time slot
-        class_schedule = next((item for item in local_db_schedule_res if item['classroom'] == classroom_id), None)
-        if class_schedule:
-            return jsonify(success=-1)  # Classroom is occupied
+        class_schedule = next((item for item in local_db_schedule_res if item['classroom'] == classroom['classroom_id'] and item['schedule_id'] == schedule_id), None)
+        if class_schedule is not None:
+            return jsonify(success=False,message="Classroom time conflict")  # Classroom time conflict
 
         # Update the schedule
         schedule = next((item for item in local_db_schedule_res if item['schedule_id'] == schedule_id), None)
-        if schedule:
-            schedule['classroom'] = classroom_id
-            schedule_res_collection.update_one({'schedule_id': schedule_id}, {'$set': {'classroom': classroom_id}})  # Update MongoDB
+        if schedule is not None:
+            schedule['classroom'] = classroom['classroom_id']
+            schedule_res_collection.update_one({'schedule_id': schedule_id}, {'$set': {'classroom': classroom['classroom_id']}})  # Update MongoDB
             schedule.pop('_id', None)  # 删除 _id 字段
-            return jsonify(success=1, schedule=schedule)  # Return the modified schedule item
+            return jsonify(success=True)  # Return the modified schedule item
         else:
-            return jsonify(success=-1)  # Update failed
+            return jsonify(success=False, message="Schedule not found")  # Schedule not found
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify(message='An error occurred while trying to connect to MongoDB'), 500
     
 
-@app.route('/reschedule', methods=['POST'])
+@app.route('/api/reschedule', methods=['POST'])
 def reschedule_classes():
     schedule_interface()
     local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
     schedule_res = local_db_schedule_res.copy()  # 使用本地数据
 
-    # 删除每个文档的 _id 字段
+    result = {"schedules": []}
+
     for document in schedule_res:
-        document.pop('_id', None)
+        course = next((item for item in local_db_courses if item['class_id'] == document['class_id']), None)
+        classroom = next((item for item in local_db_classrooms if item['classroom_id'] == document['classroom']), None)
+        campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
+        teacher = next((item for item in local_db_teacher if item['teacher_id'] == document['teacher']), None)
+        time_slot = next((item for item in local_db_time_slots if item['time'] == document['time']), None)
 
-    return jsonify(schedule_res)
+        if None in [teacher, course, classroom, campus, time_slot]:
+            continue
 
+        result["schedules"].append({
+            "Schedule_id": document['schedule_id'],
+            "teacher": teacher['teacher_name'],
+            "time_slot": time_slot['time'],
+            "course": course['class_name'],
+            "classroom": classroom['classroom_name'],
+            "campus": campus['name'],
+        })
 
+    return jsonify(result)
+
+@app.route('/api/schedule', methods=['GET'])
+def get_schedule():
+    local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
+    schedule_res = local_db_schedule_res.copy()  # 使用本地数据
+
+    result = {"schedules": []}
+
+    for document in schedule_res:
+        course = next((item for item in local_db_courses if item['class_id'] == document['class_id']), None)
+        classroom = next((item for item in local_db_classrooms if item['classroom_id'] == document['classroom']), None)
+        campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
+        teacher = next((item for item in local_db_teacher if item['teacher_id'] == document['teacher']), None)
+        time_slot = next((item for item in local_db_time_slots if item['time'] == document['time']), None)
+
+        if None in [teacher, course, classroom, campus, time_slot]:
+            continue
+
+        result["schedules"].append({
+            "Schedule_id": document['schedule_id'],
+            "teacher": teacher['teacher_name'],
+            "time_slot": time_slot['time'],
+            "course": course['class_name'],
+            "classroom": classroom['classroom_name'],
+            "campus": campus['name'],
+        })
+
+    return jsonify(result)
 
 @app.route('/')
 def index():
