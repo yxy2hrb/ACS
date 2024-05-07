@@ -35,7 +35,7 @@ export default function Course() {
 
   const [nowCourse, SetNowCourse] = useState(-1);
   const [course, SetCourse] = useState(tmp);
-  const [course_html_state,Setcoursehtml]=useState(0);
+  const [course_html_state,Setcoursehtml]=useState("null");
   const [nowcourse_html_state,Setnowcoursehtml]=useState(0);
 
  
