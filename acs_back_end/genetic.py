@@ -100,11 +100,11 @@ def get_time(k):
     day = k//10
     slot = k%10
     d1 = {
-        1:"Monday",
-        2:"Tuesday",
-        3:"Wednesday",
-        4:"Thursday",
-        5:"Friday",
+        1:"周一",
+        2:"周二",
+        3:"周三",
+        4:"周四",
+        5:"周五",
     }
     d2 = {
         1:"8:00-9:30",
@@ -113,7 +113,7 @@ def get_time(k):
         4:"16:00-17:30",
         5:"19:00-20:30"
     }
-    return d1[day] + " " + d2[slot]
+    return d1[day] + d2[slot]
 
 def init(dict,num_courses,class_time,num_timeslots):
     id = random.randint(0,num_timeslots)
