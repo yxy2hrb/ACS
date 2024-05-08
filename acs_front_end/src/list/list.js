@@ -7,7 +7,7 @@ export default function RoomList() {
   const columns = [
     {
       title: "教室名称",
-      dataIndex: "classroom_name",
+      dataIndex: "name",
       key: "classroomName",
     },
     {
@@ -24,28 +24,13 @@ export default function RoomList() {
       title: "设备",
       key: "equipment",
       dataIndex: "equipment",
-      // render: (_, { equipment }) => (
-      //   <>
-      //     {equipment.map((tag) => {
-      //       let color = tag.length > 5 ? "geekblue" : "green";
-      //       if (tag === "loser") {
-      //         color = "volcano";
-      //       }
-      //       return (
-      //         <Tag color={color} key={tag}>
-      //           {tag.toUpperCase()}
-      //         </Tag>
-      //       );
-      //     })}
-      //   </>
-      // ),
     },
     {
       title: "Action",
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <a>删除 {record.name}</a>
+          <a>删除 </a>
           <a>修改</a>
         </Space>
       ),
@@ -70,7 +55,7 @@ export default function RoomList() {
   return (
     <div>
       <div style={{ marginLeft: "15vw" }}>
-        <Table columns={columns} dataSource={classData.data} />
+        <Table columns={columns} dataSource={classData} />
       </div>
     </div>
   );
