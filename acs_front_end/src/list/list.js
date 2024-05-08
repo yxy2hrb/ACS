@@ -1,18 +1,18 @@
-
-
 import React from "react";
+import axios from "axios";
+import { useState, useEffect } from "react";
 import { Space, Table, Tag } from "antd";
 
-export default  function RoomList() {
+export default function RoomList() {
   const columns = [
     {
       title: "教室名称",
-      dataIndex: "classroomName",
+      dataIndex: "classroom_name",
       key: "classroomName",
     },
     {
       title: "校区",
-      dataIndex: "campus",
+      dataIndex: "campus_id",
       key: "campus",
     },
     {
@@ -24,21 +24,21 @@ export default  function RoomList() {
       title: "设备",
       key: "equipment",
       dataIndex: "equipment",
-      render: (_, { equipment }) => (
-        <>
-          {equipment.map((tag) => {
-            let color = tag.length > 5 ? "geekblue" : "green";
-            if (tag === "loser") {
-              color = "volcano";
-            }
-            return (
-              <Tag color={color} key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
-        </>
-      ),
+      // render: (_, { equipment }) => (
+      //   <>
+      //     {equipment.map((tag) => {
+      //       let color = tag.length > 5 ? "geekblue" : "green";
+      //       if (tag === "loser") {
+      //         color = "volcano";
+      //       }
+      //       return (
+      //         <Tag color={color} key={tag}>
+      //           {tag.toUpperCase()}
+      //         </Tag>
+      //       );
+      //     })}
+      //   </>
+      // ),
     },
     {
       title: "Action",
@@ -51,35 +51,27 @@ export default  function RoomList() {
       ),
     },
   ];
-  const data = [
-    {
-      key: "1",
-      classroomName: "教室A",
-      campus: "校区1",
-      capacity: 30,
-      equipment: ["投影仪", "白板"],
-    },
-    {
-      key: "2",
-      classroomName: "教室B",
-      campus: "校区2",
-      capacity: 25,
-      equipment: ["投影仪"],
-    },
-    {
-      key: "3",
-      classroomName: "教室C",
-      campus: "校区1",
-      capacity: 40,
-      equipment: ["投影仪", "电脑"],
-    },
-  ];
+  const [classData, setClassData] = useState([]);
+
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/classrooms");
+      setClassData(res.data);
+      console.log(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
     <div>
-      <div style={{ marginLeft: "15vw"}}>
-        <Table columns={columns} dataSource={data} />
+      <div style={{ marginLeft: "15vw" }}>
+        <Table columns={columns} dataSource={classData.data} />
       </div>
-
     </div>
   );
 }
