@@ -1,13 +1,13 @@
 import React from "react";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { Space, Table, Tag } from "antd";
+import { message, Space, Table, Tag } from "antd";
 
 export default function RoomList() {
   const columns = [
     {
       title: "教室名称",
-      dataIndex: "classroom_name",
+      dataIndex: "name",
       key: "classroomName",
     },
     {
@@ -24,28 +24,13 @@ export default function RoomList() {
       title: "设备",
       key: "equipment",
       dataIndex: "equipment",
-      // render: (_, { equipment }) => (
-      //   <>
-      //     {equipment.map((tag) => {
-      //       let color = tag.length > 5 ? "geekblue" : "green";
-      //       if (tag === "loser") {
-      //         color = "volcano";
-      //       }
-      //       return (
-      //         <Tag color={color} key={tag}>
-      //           {tag.toUpperCase()}
-      //         </Tag>
-      //       );
-      //     })}
-      //   </>
-      // ),
     },
     {
       title: "Action",
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <a>删除 {record.name}</a>
+          <a onClick={() => handleDelete(record.id)}>删除</a>
           <a>修改</a>
         </Space>
       ),
@@ -63,6 +48,22 @@ export default function RoomList() {
     }
   };
 
+  const handleDelete = async (key) => {
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/api/classrooms/${key}`
+      );
+      if (res.status === 200) {
+        message.success("删除成功");
+      }
+      console.log(res.data);
+      // After deleting, fetch the data again to update the list
+      fetchData();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -70,7 +71,7 @@ export default function RoomList() {
   return (
     <div>
       <div style={{ marginLeft: "15vw" }}>
-        <Table columns={columns} dataSource={classData.data} />
+        <Table columns={columns} dataSource={classData} />
       </div>
     </div>
   );
