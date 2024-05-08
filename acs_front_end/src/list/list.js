@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { Space, Table, Tag } from "antd";
+import { message, Space, Table, Tag } from "antd";
 
 export default function RoomList() {
   const columns = [
@@ -30,7 +30,7 @@ export default function RoomList() {
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <a>删除 </a>
+          <a onClick={() => handleDelete(record.id)}>删除</a>
           <a>修改</a>
         </Space>
       ),
@@ -43,6 +43,22 @@ export default function RoomList() {
       const res = await axios.get("http://localhost:5000/api/classrooms");
       setClassData(res.data);
       console.log(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleDelete = async (key) => {
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/api/classrooms/${key}`
+      );
+      if (res.status === 200) {
+        message.success("删除成功");
+      }
+      console.log(res.data);
+      // After deleting, fetch the data again to update the list
+      fetchData();
     } catch (error) {
       console.log(error);
     }
