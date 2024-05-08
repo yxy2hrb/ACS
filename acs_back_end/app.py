@@ -223,6 +223,7 @@ def get_courses(teacher_id):
             campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
             teacher = next((item for item in local_db_teacher if item['teacher_id'] == courses[i]['teacher']), None)
             time_slot = next((item for item in local_db_time_slots if item['time'] == courses[i]['time']), None)
+
             if None in [teacher, course, classroom, campus, time_slot]:
                 continue
 
@@ -234,6 +235,7 @@ def get_courses(teacher_id):
                 "classroom": classroom['classroom_name'],
                 "campus": campus['name'],
                 "capacity": classroom['capacity'],
+                "time_slot": time_slot['time_slot'],
             })
 
         return jsonify(result)  # 返回结果到前端
@@ -246,39 +248,35 @@ def get_courses(teacher_id):
 def change_teacher_time():
     data = request.get_json()
     schedule_id = data.get('schedule_id')
+    target_time_slot = data.get('time_slot')
+
+    # 从 time_slots 集合中查找对应的 time
+    target_time = next((item['time'] for item in local_db_time_slots if item['time_slot'] == target_time_slot), None)
+
+    if target_time is None:
+        return jsonify({"success": False, "message": "Invalid time_slot."}), 400
+
     try:
-        query = {}
-        if schedule_id is not None:
-            query['schedule_id'] = schedule_id
+        # 获取目标时间对应的所有课程
+        target_courses = [item for item in local_db_schedule_res if item['time'] == target_time]
 
-        schedules = [item for item in local_db_schedule_res if item['schedule_id'] == schedule_id]
-        teacher_id = schedules[0]['teacher'] if schedules else None
-        classroom_id = schedules[0]['classroom'] if schedules else None
+        # 获取这些课程的教室id
+        target_classrooms = [course['classroom'] for course in target_courses]
 
-        if teacher_id is not None:
-            teacher_courses = [item for item in local_db_schedule_res if item['teacher'] == teacher_id]
-            teacher_times = [course['time'] for course in teacher_courses]
-        else:
-            teacher_times = []
+        # 获取所有的教室
+        all_classrooms = local_db_classrooms
 
-        if classroom_id is not None:
-            classroom_courses = [item for item in local_db_schedule_res if item['classroom'] == classroom_id]
-            classroom_times = [course['time'] for course in classroom_courses]
-        else:
-            classroom_times = []
+        # 筛选出在目标时间没有被占用的教室
+        available_classrooms = [classroom for classroom in all_classrooms if classroom['classroom_id'] not in target_classrooms]
 
-        busy_times = set(teacher_times + classroom_times)
+        # 检查 available_classrooms 是否为空
+        if len(available_classrooms) == 0:
+            return jsonify({"success": False,"message":"No available classrooms."}), 200
 
-        # 直接从time_slots集合中查询time字段对应的time_slot
-        all_time_slots = local_db_time_slots
-        available_times = [slot['time_slot'] for slot in all_time_slots if slot['time'] not in busy_times]
-        print (available_times)
+        # 将 available_classrooms 转换为所需的格式
+        available_classrooms_new = [{"campus_id": classroom['campus_id'], "capacity": classroom['capacity'], "class_id": classroom['classroom_id'], "classroom_name": classroom['classroom_name'], "equipment": classroom['equipment']} for classroom in available_classrooms]
 
-        # 检查 available_times 是否为空
-        if len(available_times) == 0:
-            return jsonify({"success": False,"message":"No available time slots."}), 200
-
-        return jsonify({"success": True, "time": available_times}), 200  # 返回的是time_slot，但字段名仍为time
+        return jsonify({"success": True, "classes": available_classrooms_new}), 200
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB"}), 500
@@ -311,7 +309,7 @@ def change_teacher_class():
         for c in available_classes:
             new_c = c.copy()  # 创建一个新的字典
             new_c.pop('_id', None)  # 删除 _id 字段
-            new_c.pop('classroom_name', None)  # 删除 classroom_name 字段
+         #   new_c.pop('classroom_name', None)  # 删除 classroom_name 字段
             new_c['class_id'] = new_c.pop('classroom_id', None)  # 将 'classroom_id' 改为 'class_id'
             available_classes_new.append(new_c)
 
@@ -330,6 +328,7 @@ def change_schedule_time():
     data = request.json
     schedule_id = data['schedule_id']
     time_slot_id = data['time_slot']
+    classroom_id = data['classroom_id']
 
     # 从 time_slots 集合中查找对应的时间字符串
     time_slot = next((item['time'] for item in local_db_time_slots if item['time_slot'] == time_slot_id), None)
@@ -338,7 +337,7 @@ def change_schedule_time():
 
     try:
         # Check if the classroom is occupied at this time slot
-        class_schedule = next((item for item in local_db_schedule_res if item['classroom'] == schedule_id and item['time'] == time_slot), None)
+        class_schedule = next((item for item in local_db_schedule_res if item['classroom'] == classroom_id and item['time'] == time_slot), None)
         if class_schedule is not None:
             return jsonify(success=False,message = "Classroom time conflict")  # Classroom time conflict
 
@@ -346,7 +345,8 @@ def change_schedule_time():
         schedule = next((item for item in local_db_schedule_res if item['schedule_id'] == schedule_id), None)
         if schedule is not None:
             schedule['time'] = time_slot
-            schedule_res_collection.update_one({'schedule_id': schedule_id}, {'$set': {'time': time_slot}})  # Update MongoDB
+            schedule['classroom'] = classroom_id
+            schedule_res_collection.update_one({'schedule_id': schedule_id}, {'$set': {'time': time_slot, 'classroom': classroom_id}})  # Update MongoDB
             schedule.pop('_id', None)  # 删除 _id 字段
             return jsonify(success=True)  # Return the modified schedule item
         else:
@@ -450,3 +450,4 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
