@@ -47,7 +47,7 @@ export default function Course() {
   const week_num2str = ["周一", "周二", "周三", "周四", "周五"];
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/teacher/courses/1")
+      .get("http://127.0.0.1:5000/api/teacher/courses/1")
       .then((response) => {
         console.log(response.data);
         SetCourse(response.data.courses);

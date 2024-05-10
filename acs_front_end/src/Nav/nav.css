@@ -43,8 +43,9 @@
     cursor: pointer;
     transition: all .3s;
 }
-.frame a:hover{
+/* .frame a:hover{
     background-color: rgb(240,240,240);
     border-radius: 10%;
     border-style: solid;
-}
+} */
+
