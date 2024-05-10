@@ -174,6 +174,7 @@ export default function Course() {
   const handlePrint = () => {
     window.print();
   };
+
   return (
     <div className="course">
       <div className="detail">
