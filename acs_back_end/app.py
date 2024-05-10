@@ -57,6 +57,7 @@ def update_local_schedule():
 
 # 获取课室信息
 @app.route('/api/classrooms', methods=['GET'])
+@cross_origin()
 def get_classrooms():
     try:
         classes = copy.deepcopy(local_db_classrooms)
@@ -84,6 +85,7 @@ def get_classrooms():
     
 
 @app.route('/api/classrooms', methods=['POST'])
+@cross_origin()
 def create_classroom():
     try:
         # 从请求体中获取教室信息
@@ -106,7 +108,7 @@ def create_classroom():
             'capacity': classroom_info['capacity'],
             'equipment': classroom_info['equipment'],
         }
-
+        
         # 检查是否已经存在具有相同 classroom_name 和 campus_id 的教室
         existing_classroom = next((item for item in local_db_classrooms if item["classroom_name"] == classroom_info['classroom_name'] and item["campus_id"] == campus_id), None)
         if existing_classroom is not None:
@@ -129,6 +131,7 @@ def create_classroom():
         return jsonify({"message": "An error occurred while trying to connect to MongoDB", "data": []}), 500
     
 @app.route('/api/classrooms/<int:id>', methods=['DELETE'])
+@cross_origin()
 def delete_classroom(id):
     try:
         # 查询并删除教室
@@ -155,6 +158,7 @@ def delete_classroom(id):
 
 
 @app.route('/api/classrooms/<int:id>', methods=['PUT'])
+@cross_origin()
 def update_classroom(id):
     try:
         # 获取请求中的参数
@@ -212,6 +216,7 @@ def update_classroom(id):
         return jsonify({"message": "An error occurred while trying to update classroom", "data": []}), 500
 
 @app.route('/api/teacher/courses/<int:teacher_id>', methods=['GET'])
+@cross_origin()
 def get_courses(teacher_id):
     try:
         courses = [item for item in local_db_schedule_res if item['teacher'] == teacher_id]
@@ -245,6 +250,7 @@ def get_courses(teacher_id):
         return jsonify({"message": "An error occurred while trying to get courses", "data": []}), 500
     
 @app.route('/api/teacher/change/time', methods=['POST'])
+@cross_origin()
 def change_teacher_time():
     data = request.get_json()
     schedule_id = data.get('schedule_id')
@@ -283,6 +289,7 @@ def change_teacher_time():
 
     
 @app.route('/api/teacher/change/class', methods=['POST'])
+@cross_origin()
 def change_teacher_class():
     data = request.get_json()
     schedule_id = data.get('schedule_id')
@@ -324,6 +331,7 @@ def change_teacher_class():
         
 
 @app.route('/api/change/schedule/time', methods=['POST'])
+@cross_origin()
 def change_schedule_time():
     data = request.json
     schedule_id = data['schedule_id']
@@ -357,6 +365,7 @@ def change_schedule_time():
     
 
 @app.route('/api/change/schedule/classroom', methods=['POST'])
+@cross_origin()
 def change_schedule_classroom():
     data = request.get_json()
     schedule_id = data['schedule_id']
@@ -388,6 +397,7 @@ def change_schedule_classroom():
     
 
 @app.route('/api/reschedule', methods=['POST'])
+@cross_origin()
 def reschedule_classes():
     schedule_interface()
     local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
@@ -417,6 +427,7 @@ def reschedule_classes():
     return jsonify(result)
 
 @app.route('/api/schedule', methods=['GET'])
+@cross_origin()
 def get_schedule():
     local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
     schedule_res = local_db_schedule_res.copy()  # 使用本地数据
@@ -445,6 +456,7 @@ def get_schedule():
     return jsonify(result)
 
 @app.route('/')
+@cross_origin()
 def index():
     return 'Index Page'
 
