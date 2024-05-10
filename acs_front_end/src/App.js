@@ -1,30 +1,91 @@
-import logo from './logo.svg';
-import './App.css';
+import logo from "./logo.svg";
+import "./App.css";
 import Nav from "./Nav/nav";
-import Topbar from './topbar/topbar';
+import TNav from "./TNav/nav";
+import Topbar from "./topbar/topbar";
 import Course from "./course/course";
 import Classroom from "./classroom/classroom";
-import RoomList from './list/list';
-import { BrowserRouter as Router, Route,Routes, Outlet } from "react-router-dom";
-import Schedule from './shedule/schedule';
-const NotFound = () => <h1>404</h1>
+import RoomList from "./list/list";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Outlet,
+} from "react-router-dom";
+import Schedule from "./shedule/schedule";
+const NotFound = () => <h1>404</h1>;
 function App() {
   return (
     <Router>
-    <Routes>
-      <Route exact path="/teacher/" element={<div><Topbar/><Nav/></div>} />
-      <Route exact path="/teacher/course" element={<div><Topbar/><Nav/><Course></Course></div>} />
-      <Route exact path="/teacher/classroom" element={<div><Topbar/><Nav/><Classroom></Classroom></div>} />
-      <Route exact path="/teacher/classroom/list" element={<div><Topbar/><Nav/><RoomList></RoomList></div>} />
-      <Route exact path="/teacher/schedule" element={<div><Topbar/><Nav/><Schedule></Schedule></div>} />
-           
+      <Routes>
+        <Route
+          exact
+          path="/admin/"
+          element={
+            <div>
+              <Topbar />
+              <Nav />
+            </div>
+          }
+        />
+        <Route
+          exact
+          path="/teacher/"
+          element={
+            <div>
+              <Topbar />
+              <TNav />
+            </div>
+          }
+        />
+        <Route
+          exact
+          path="/teacher/course"
+          element={
+            <div>
+              <Topbar />
+              <TNav />
+              <Course></Course>
+            </div>
+          }
+        />
+        <Route
+          exact
+          path="/admin/classroom"
+          element={
+            <div>
+              <Topbar />
+              <Nav />
+              <Classroom></Classroom>
+            </div>
+          }
+        />
+        <Route
+          exact
+          path="/admin/classroom/list"
+          element={
+            <div>
+              <Topbar />
+              <Nav />
+              <RoomList></RoomList>
+            </div>
+          }
+        />
+        <Route
+          exact
+          path="/admin/schedule"
+          element={
+            <div>
+              <Topbar />
+              <Nav />
+              <Schedule></Schedule>
+            </div>
+          }
+        />
 
-        
-
-      
-      <Route path="*" element={<NotFound/>}/>
-    </Routes>
-  </Router>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
   );
 }
 

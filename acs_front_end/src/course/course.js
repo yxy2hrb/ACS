@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import "./course.css";
 import { Select } from "antd";
+import { useReactToPrint } from "react-to-print";
 import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
 import axios from "axios";
 export default function Course() {
@@ -182,7 +183,7 @@ export default function Course() {
         <div className="detail_body">{nowcourse_html_state}</div>
       </div>
 
-      <div className="schedule">
+      <div className="schedule" id="print-content">
         <div className="title">教师个人课表</div>
         <div className="body">
           <div className="title2">
