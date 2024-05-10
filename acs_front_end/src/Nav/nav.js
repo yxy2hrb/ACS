@@ -1,50 +1,33 @@
 "use client";
 import { Menu } from "antd";
 import React from "react";
+import { Link } from 'react-router-dom';
 import { useState } from "react";
 import "./nav.css";
 
 export default function Nav({ nowstate }) {
-  const l = [];
-
-  l.push(
-    <li>
-      <a href="/teacher/course">
-        <div className="now">教师课表</div>
-      </a>
-    </li>
-  );
-
-  l.push(
-    <li>
-      <a href="/teacher/classroom">
-        <div>增加教室</div>
-      </a>
-    </li>
-  );
-  l.push(
-    <li>
-      <a href="/teacher/classroom/list">
-        <div>教室信息</div>
-      </a>
-    </li>
-  );
-  l.push(
-    <li>
-      <a href="/teacher">首页</a>
-    </li>
-  );
-  l.push(
-    <li>
-      <a href="/teacher/schedule">排课信息</a>
-    </li>
-  );
 
   return (
-    <div className="wi">
-      <div className="frame">
-        <ul>{l}</ul>
-      </div>
-    </div>
+    <div className="wi">  
+      <div className="frame">  
+        <Menu defaultSelectedKeys={[nowstate]} mode="inline" style={{ background: '#white' , height: '100%'}}>  
+          <Menu.Item key="/teacher" >  
+            <Link to="/teacher">首页</Link>  
+          </Menu.Item>  
+          <Menu.Item key="/teacher/schedule" >  
+            <Link to="/teacher/schedule">排课信息</Link>  
+          </Menu.Item>  
+          <Menu.Item key="/teacher/course" >  
+            <Link to="/teacher/course">教师课表</Link>  
+          </Menu.Item>  
+          <Menu.Item key="/teacher/classroom" >  
+            <Link to="/teacher/classroom">增加教室</Link>  
+          </Menu.Item>  
+          <Menu.Item key="/teacher/classroom/list" >  
+            <Link to="/teacher/classroom/list">教室信息</Link>  
+          </Menu.Item>  
+        </Menu>  
+      </div>  
+    </div>  
   );
 }

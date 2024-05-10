@@ -2,11 +2,11 @@
 import React from 'react';
 import { useState } from "react";
 import "./classroom.css"
-import { Form, Input, Radio, Checkbox, Button, Select }  from 'antd';
+import { Form, Input, message, Button, Select }  from 'antd';
+import axios from 'axios';
 const { Option } = Select;
 export default function Classroom()
 {
-
   const [formData, setFormData] = useState({  
     classroomName: '',  
     campus: '',  
@@ -18,18 +18,24 @@ export default function Classroom()
     setFormData(allValues);  
   };
 
-  const onFinish = (values) => {  
+  const onFinish = async (values) => {  
     console.log('Received values:', values);  
+    try {  
+      const response = await axios.post('http://127.0.0.1:5000/api/classrooms', values);  
+      console.log(response.status)
+      if(response.status===200 || response.status===201)message.success(response.data["message"])
+      else console.log(response)
+    } catch (error) {  
+      console.log(error)
+      message.error("出错了")
+    }  
   };  
   
   const onFinishFailed = (errorInfo) => {  
     console.log('Failed:', errorInfo);  
+    message.error('表单提交失败')
   }; 
   
-  const handleCancel = () => {  
-    console.log("cancel")
-  };  
-
 
     return(
         <div className='mask'>
@@ -65,6 +71,8 @@ export default function Classroom()
                     <Option value="西溪">西溪</Option>  
                     <Option value="华家池">华家池</Option>  
                     <Option value="之江">之江</Option> 
+                    <Option value="舟山">舟山</Option> 
+                    <Option value="海宁">海宁</Option> 
                   </Select>  
                 </Form.Item> 
             
@@ -79,11 +87,13 @@ export default function Classroom()
                 <Form.Item  
                   label="教室设备"  
                   name="equipment"  
-                  rules={[{ required: true, message: '请选择教室设备' }]}  
+                  rules={[{ required: false, message: '请选择教室设备' }]}  
                 >  
                   <Select mode="multiple">  
                     <Option value="投影仪">投影仪</Option>  
                     <Option value="白板">白板</Option>  
+                    <Option value="黑板">黑板</Option>
+                    <Option value="激光笔">激光笔</Option>  
                     <Option value="电脑">电脑</Option>  
                     <Option value="fpga开发板">fpga开发板</Option>  
                     <Option value="实验台">实验台</Option>  
@@ -94,9 +104,11 @@ export default function Classroom()
                   <Button type="primary" htmlType="submit" className='confirm'>  
                     确认  
                   </Button>  
-                  <Button type="default" htmlType="button" className="cancel-button" onClick={handleCancel}>  
-                    取消  
-                  </Button>  
+                  <a href="/teacher">
+                    <Button type="default" htmlType="button" className="cancel-button" >  
+                      取消
+                    </Button>    
+                  </a>  
                 </Form.Item>  
               </Form>  
               </div>

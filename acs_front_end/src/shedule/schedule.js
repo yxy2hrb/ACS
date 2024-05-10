@@ -420,7 +420,7 @@ export default function Schedule() {
         useEffect(()=>{
           SetNew(0)
           //Setschedule_data(data)
-          axios.get('http://localhost:5000/api/schedule').then(  response => {
+          axios.get('http://127.0.0.1:5000/api/schedule').then(  response => {
             console.log(response.data)
             Setschedule_data(response.data.schedules)
         }).catch(err => {
@@ -457,7 +457,7 @@ export default function Schedule() {
             //     classroom_id:2
             //   },
             // ];
-            axios.post('http://localhost:5000/api/teacher/change/class',data).then(  response => {
+            axios.post('http://127.0.0.1:5000/api/teacher/change/class',data).then(  response => {
               //console.log(response.data.classes)
               const data_class2=[]
               const campusid2str=[
@@ -498,7 +498,7 @@ export default function Schedule() {
           classroom_id:class_id
         }
 
-        axios.post('http://localhost:5000/api/change/schedule/classroom',data).then(  response => {
+        axios.post('http://127.0.0.1:5000/api/change/schedule/classroom',data).then(  response => {
           console.log(response.data)
 
          if(response.data.success==1){
@@ -619,7 +619,7 @@ export default function Schedule() {
                 time_slot:selecttime1*10+selecttime2
               }
               console.log(data)
-              axios.post('http://localhost:5000//api/teacher/change/time',data).then(  response => {
+              axios.post('http://127.0.0.1:5000//api/teacher/change/time',data).then(  response => {
                 console.log(response.data)
                 const data_class2=[]
                 const campusid2str=[
@@ -661,7 +661,7 @@ export default function Schedule() {
               time_slot:selecttime1*10+selecttime2
             }
             console.log(data)
-            axios.post('http://localhost:5000/api/change/schedule/time',data).then(  response => {
+            axios.post('http://127.0.0.1:5000/api/change/schedule/time',data).then(  response => {
               console.log(response.data)
     
              if(response.data.success==1){
