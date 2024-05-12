@@ -86,9 +86,6 @@ def get_classrooms():
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB", "data": []}), 500
-    
-
-import re  # 导入正则表达式模块
 
 @app.route('/api/classrooms', methods=['POST'])
 @cross_origin()
@@ -109,8 +106,10 @@ def create_classroom():
             return jsonify({"message": "Invalid data type for 'classroomName'", "data": []}), 400
 
         # 检查 'classroomName' 是否符合 "xxx-xxx" 的格式
-        if not re.match(r'^\w+-\w+$', classroom_info['classroomName']):
-            return jsonify({"message": "Invalid format for 'classroomName'. It should be in the format 'xxx-xxx'", "data": []}), 400
+        # -之前的字符串必须汉字开头，且只能包括汉字，字母和数字，长度大于等于2，小于等于10
+        # -后的字符串只能包含数字，长度大于等于3，小于等于4
+        if not re.match(r'^[\u4e00-\u9fa5][\u4e00-\u9fa5a-zA-Z0-9]{1,9}-\d{3,4}$', classroom_info['classroomName']):
+            return jsonify({"message": "Invalid format for 'classroomName'. It should be in the format 'xxx-xxx', where 'xxx' is a string starting with a Chinese character and containing only Chinese characters, letters, and numbers with length between 2 and 10, and 'xxx' is a string containing only numbers with length between 3 and 4.", "data": []}), 400
 
         # 检查 'campus' 是否为字符串
         if not isinstance(classroom_info['campus'], str):
@@ -164,7 +163,7 @@ def create_classroom():
                     local_db_classrooms.append(new_classroom)
             threading.Thread(target=update_local_db).start()
             classroom_info.pop('_id', None)  # 删除 _id 字段
-            return jsonify({"message": f"Successfully inserted item with _id: {str(result.inserted_id)}", "data": [classroom_info]}), 201
+            return jsonify({"message": "success", "data": [classroom_info]}), 201
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB", "data": []}), 500
@@ -216,8 +215,10 @@ def update_classroom(id):
             return jsonify({"message": "Invalid data type for 'classroomName'", "data": []}), 400
 
         # 检查 'classroomName' 是否符合 "xxx-xxx" 的格式
-        if classroom_name is not None and not re.match(r'^\w+-\w+$', classroom_name):
-            return jsonify({"message": "Invalid format for 'classroomName'. It should be in the format 'xxx-xxx'", "data": []}), 400
+        # -之前的字符串必须汉字开头，且只能包括汉字，字母和数字，长度大于等于2，小于等于10
+        # -后的字符串只能包含数字，长度大于等于3，小于等于4
+        if classroom_name is not None and not re.match(r'^[\u4e00-\u9fa5][\u4e00-\u9fa5a-zA-Z0-9]{1,9}-\d{3,4}$', classroom_name):
+            return jsonify({"message": "Invalid format for 'classroomName'. It should be in the format 'xxx-xxx', where 'xxx' is a string starting with a Chinese character and containing only Chinese characters, letters, and numbers with length between 2 and 10, and 'xxx' is a string containing only numbers with length between 3 and 4.", "data": []}), 400
 
         # 检查 'campus' 是否为字符串
         if campus_name is not None and not isinstance(campus_name, str):
