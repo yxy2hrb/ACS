@@ -3,13 +3,16 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask_cors import CORS, cross_origin
 from genetic import schedule_interface
+from database import get_local_db, update_local_db
 import copy
 import threading
 import time
+import re  # 导入正则表达式模块
+from threading import Event
 
+schedule_done = Event()
 app = Flask(__name__)
 cors = CORS(app)
-
 
 uri = "mongodb+srv://3210102495:Gw7GaKXlOuMWQ1bf@cluster0.pheotiv.mongodb.net/"
 client = MongoClient(uri)
@@ -23,43 +26,44 @@ teacher_collection = database['teacher']
 classrooms_collection = database['classrooms']
 time_slots_collection = database['time_slots']  # 新增
 
-local_db_schedule_res = list(schedule_res_collection.find({}))
-local_db_courses = list(courses_collection.find({}))
-local_db_campus = list(campus_collection.find({}))
-local_db_teacher = list(teacher_collection.find({}))
-local_db_classrooms = list(classrooms_collection.find({}))
-local_db_time_slots = list(time_slots_collection.find({}))  # 新增
-
 # 创建一个锁
 data_lock = threading.Lock()
+global next_classroom_id  
 
-# 启动一个新的后台线程，定期从数据库中获取更新的数据
-def update_local_db():
+def update_local_db_from_mongodb():
     while True:
         with data_lock:  # 获取锁
-            local_db_schedule_res[:] = list(schedule_res_collection.find({}))
-            local_db_courses[:] = list(courses_collection.find({}))
-            local_db_campus[:] = list(campus_collection.find({}))
-            local_db_teacher[:] = list(teacher_collection.find({}))
-            local_db_classrooms[:] = list(classrooms_collection.find({}))
-            local_db_time_slots[:] = list(time_slots_collection.find({}))  # 新增
+            schedule_res = list(schedule_res_collection.find({}))
+            courses = list(courses_collection.find({}))
+            campus = list(campus_collection.find({}))
+            teacher = list(teacher_collection.find({}))
+            classrooms = list(classrooms_collection.find({}))
+            time_slots = list(time_slots_collection.find({}))  # 新增
+            update_local_db(schedule_res, courses, campus, teacher, classrooms, time_slots)
+        
         print("Updated local database at", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))  # 打印更新时间
         time.sleep(60)  # 每60秒更新一次数据
 
-update_thread = threading.Thread(target=update_local_db)
+update_thread = threading.Thread(target=update_local_db_from_mongodb)
 update_thread.start()
 
-# 在后台下载排课表到本地
-def update_local_schedule():
-    global local_db_schedule_res  # 声明全局变量
-    with data_lock:  # 获取锁
-        local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
+
+def update_mongodb():
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
+    # 删除 MongoDB 中的原有排课表
+    schedule_done.wait()
+    schedule_res_collection.delete_many({})
+
+    # 将本地数据写入 MongoDB
+    for document in local_db_schedule_res:
+        schedule_res_collection.insert_one(document)
 
 # 获取课室信息
 @app.route('/api/classrooms', methods=['GET'])
 @cross_origin()
 def get_classrooms():
     try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
         classes = copy.deepcopy(local_db_classrooms)
 
         result = []  # 创建一个新的结果列表
@@ -84,12 +88,41 @@ def get_classrooms():
         return jsonify({"message": "An error occurred while trying to connect to MongoDB", "data": []}), 500
     
 
+import re  # 导入正则表达式模块
+
 @app.route('/api/classrooms', methods=['POST'])
 @cross_origin()
 def create_classroom():
+    global next_classroom_id  # 声明 next_classroom_id 为全局变量
     try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
         # 从请求体中获取教室信息
         classroom_info = request.json
+
+        # 检查 classroom_info 是否包含所有必需的键
+        required_keys = ['classroomName', 'campus', 'capacity', 'equipment']
+        if not all(key in classroom_info for key in required_keys):
+            return jsonify({"message": "Missing required fields in request body", "data": []}), 400
+
+        # 检查 'classroomName' 是否为字符串
+        if not isinstance(classroom_info['classroomName'], str):
+            return jsonify({"message": "Invalid data type for 'classroomName'", "data": []}), 400
+
+        # 检查 'classroomName' 是否符合 "xxx-xxx" 的格式
+        if not re.match(r'^\w+-\w+$', classroom_info['classroomName']):
+            return jsonify({"message": "Invalid format for 'classroomName'. It should be in the format 'xxx-xxx'", "data": []}), 400
+
+        # 检查 'campus' 是否为字符串
+        if not isinstance(classroom_info['campus'], str):
+            return jsonify({"message": "Invalid data type for 'campus'", "data": []}), 400
+
+        # 检查 'capacity' 是否为整数
+        if not isinstance(classroom_info['capacity'], int):
+            return jsonify({"message": "Invalid data type for 'capacity'", "data": []}), 400
+
+        # 检查 'equipment' 是否为字符串数组
+        if not isinstance(classroom_info['equipment'], list) or not all(isinstance(item, str) for item in classroom_info['equipment']):
+            return jsonify({"message": "Invalid data type for 'equipment'", "data": []}), 400
 
         # 查询 campus_id
         campus = next((item for item in local_db_campus if item["name"] == classroom_info['campus']), None)
@@ -97,8 +130,14 @@ def create_classroom():
             raise Exception('Campus not found')
         campus_id = campus['campus_id']
 
-        # 自动生成 classroom_id
-        classroom_id = len(local_db_classrooms)
+        # 更新 next_classroom_id
+        if local_db_classrooms:
+            next_classroom_id = max(classroom['classroom_id'] for classroom in local_db_classrooms) + 1
+        else:
+            next_classroom_id = 1
+
+         # 自动生成 classroom_id
+        classroom_id = next_classroom_id
 
         # 调整数据格式
         classroom_info = {
@@ -134,6 +173,7 @@ def create_classroom():
 @cross_origin()
 def delete_classroom(id):
     try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
         # 查询并删除教室
         result = classrooms_collection.delete_one({'classroom_id': id})
 
@@ -148,7 +188,7 @@ def delete_classroom(id):
             threading.Thread(target=schedule_interface).start()
             
             # 在后台下载排课表到本地
-            update_thread = threading.Thread(target=update_local_schedule)  # 创建新线程
+            update_thread = threading.Thread(target=update_mongodb)  # 创建新线程
             update_thread.start()  # 开始新线程
             
             return jsonify({"message": f"Successfully deleted classroom with id: {id}", "data": []}), 200
@@ -161,10 +201,31 @@ def delete_classroom(id):
 @cross_origin()
 def update_classroom(id):
     try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
         # 获取请求中的参数
         classroom_name = request.json.get('classroomName')
         campus_name = request.json.get('campus')
         equipment = request.json.get('equipment')
+
+        # 检查 'id' 是否为整数
+        if not isinstance(id, int):
+            return jsonify({"message": "Invalid data type for 'id'", "data": []}), 400
+
+        # 检查 'classroomName' 是否为字符串
+        if classroom_name is not None and not isinstance(classroom_name, str):
+            return jsonify({"message": "Invalid data type for 'classroomName'", "data": []}), 400
+
+        # 检查 'classroomName' 是否符合 "xxx-xxx" 的格式
+        if classroom_name is not None and not re.match(r'^\w+-\w+$', classroom_name):
+            return jsonify({"message": "Invalid format for 'classroomName'. It should be in the format 'xxx-xxx'", "data": []}), 400
+
+        # 检查 'campus' 是否为字符串
+        if campus_name is not None and not isinstance(campus_name, str):
+            return jsonify({"message": "Invalid data type for 'campus'", "data": []}), 400
+
+        # 检查 'equipment' 是否为字符串数组
+        if equipment is not None and (not isinstance(equipment, list) or not all(isinstance(item, str) for item in equipment)):
+            return jsonify({"message": "Invalid data type for 'equipment'", "data": []}), 400
 
         # 从本地数据中用campus字段查询相应campus_id
         campus = next((item for item in local_db_campus if item["name"] == campus_name), None)
@@ -206,7 +267,7 @@ def update_classroom(id):
             threading.Thread(target=update_local_db).start()
             
             # 在后台下载排课表到本地
-            update_thread = threading.Thread(target=update_local_schedule)  # 创建新线程
+            update_thread = threading.Thread(target=update_mongodb)  # 创建新线程
             update_thread.start()  # 开始新线程
             
             # 如果成功更新教室信息，返回 200 状态码
@@ -219,6 +280,7 @@ def update_classroom(id):
 @cross_origin()
 def get_courses(teacher_id):
     try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
         courses = [item for item in local_db_schedule_res if item['teacher'] == teacher_id]
         result = {"courses": []}
 
@@ -252,6 +314,7 @@ def get_courses(teacher_id):
 @app.route('/api/teacher/change/time', methods=['POST'])
 @cross_origin()
 def change_teacher_time():
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
     data = request.get_json()
     schedule_id = data.get('schedule_id')
     target_time_slot = data.get('time_slot')
@@ -297,6 +360,7 @@ def change_teacher_class():
     min_equip = data.get('min_equip')
 
     try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
         # 查找满足条件的教室
         available_classes = [c for c in local_db_classrooms if c['capacity'] >= min_capacity and all(equip in c['equipment'] for equip in min_equip)]
 
@@ -333,6 +397,7 @@ def change_teacher_class():
 @app.route('/api/change/schedule/time', methods=['POST'])
 @cross_origin()
 def change_schedule_time():
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
     data = request.json
     schedule_id = data['schedule_id']
     time_slot_id = data['time_slot']
@@ -367,6 +432,7 @@ def change_schedule_time():
 @app.route('/api/change/schedule/classroom', methods=['POST'])
 @cross_origin()
 def change_schedule_classroom():
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
     data = request.get_json()
     schedule_id = data['schedule_id']
     classroom_id = data['classroom_id']
@@ -394,19 +460,20 @@ def change_schedule_classroom():
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify(message='An error occurred while trying to connect to MongoDB'), 500
-    
 
 @app.route('/api/reschedule', methods=['POST'])
 @cross_origin()
 def reschedule_classes():
     schedule_interface()
-    local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
     schedule_res = local_db_schedule_res.copy()  # 使用本地数据
+
+    courses = copy.deepcopy(local_db_courses)  # 使用深拷贝
 
     result = {"schedules": []}
 
     for document in schedule_res:
-        course = next((item for item in local_db_courses if item['class_id'] == document['class_id']), None)
+        course = next((item for item in courses if item['class_id'] == document['class_id']), None)
         classroom = next((item for item in local_db_classrooms if item['classroom_id'] == document['classroom']), None)
         campus = next((item for item in local_db_campus if item['name'] == course['campus_id']), None) if course else None
         teacher = next((item for item in local_db_teacher if item['teacher_id'] == document['teacher']), None)
@@ -424,12 +491,16 @@ def reschedule_classes():
             "campus": campus['name'],
         })
 
+    # 在新线程中更新 MongoDB
+    threading.Thread(target=update_mongodb).start()
+
     return jsonify(result)
+
 
 @app.route('/api/schedule', methods=['GET'])
 @cross_origin()
 def get_schedule():
-    local_db_schedule_res = list(schedule_res_collection.find({}))  # 从 MongoDB 更新本地数据
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
     schedule_res = local_db_schedule_res.copy()  # 使用本地数据
 
     result = {"schedules": []}
