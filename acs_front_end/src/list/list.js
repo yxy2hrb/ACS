@@ -96,17 +96,17 @@ export default function RoomList() {
   };
 
   const onFinish = async (values) => {  
-    console.log('Received values:', values);  
     try {  
       const body = {
         "classroom_id": values.record_id,
         "classroom_name": values.classroomName,
-        "campus_id": compus2id[values.campus],
+        "campus": values.campus,
         "equipment": values.equipment,
-        "capacity": values.capacity,
+        "capacity": Number(values.capacity),
 
       }
-      const response = await axios.put(`http://127.0.0.1:5000/api/classrooms/${values['record_id']}`, values);  
+      console.log('Put body',body)
+      const response = await axios.put(`http://127.0.0.1:5000/api/classrooms/${values['record_id']}`, body);  
       console.log(response)
       message.success("success")
     } catch (error) { 
