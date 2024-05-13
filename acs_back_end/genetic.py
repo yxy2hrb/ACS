@@ -3,6 +3,12 @@ import argparse
 import random
 import pymongo
 import utils
+from database import get_local_db, update_local_db
+from threading import Event
+import copy
+
+schedule_done = Event()
+
 def get_num(ss):
     a = ss//10
     b = ss%10
@@ -28,9 +34,6 @@ def check_collision(ind,dict):
             res = False
             break
     return res
-
-
-
 
 def fitness(individual,num_courses,num_timeslots,tc_dict):
     num = num_courses//num_timeslots
@@ -234,26 +237,24 @@ def prepare_info():
 
 
 def schedule_interface():
-    client = pymongo.MongoClient("mongodb+srv://3210102495:Gw7GaKXlOuMWQ1bf@cluster0.pheotiv.mongodb.net/")
-    db_list = client.list_database_names()
-    print("成功连接到MongoDB!")
-    #
-    mydb = client["scheduling_course"]
-    mydb["schedule_res"].drop()
-    mycollection = mydb["courses"]
-    #
-    courses = mycollection.find()
+    # 获取本地数据库
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
+
+    # 从本地数据库中获取课程和教室信息
+    courses = copy.deepcopy(local_db_courses)
+    classrooms = copy.deepcopy(local_db_classrooms)
+
     cid = []
     tid = []
-    for doc in mycollection.find():
+    for doc in courses:
         tid.append(doc["teacher_id"])
         cid.append(doc["class_id"])
-    course_num = mycollection.count_documents({})
-    mycollection = mydb["classrooms"]
-    classroom_num = mycollection.count_documents({})
-    schedule_ids,class_ids,times,classrooms,teachers = schedule_course(course_num,classroom_num,cid,tid)
+    course_num = len(courses)
+    classroom_num = len(classrooms)
+
+    schedule_ids, class_ids, times, classrooms, teachers = schedule_course(course_num, classroom_num, cid, tid)
+
     data = []
-    mycollection = mydb["schedule_res"]
     for i in range(0, course_num):
         item = {}
         item["schedule_id"] = schedule_ids[i]
@@ -262,8 +263,12 @@ def schedule_interface():
         item["classroom"] = classrooms[i]
         item["teacher"] = teachers[i]
         data.append(item)
+
     print(data)
-    mycollection.insert_many(data)
+
+    # 更新本地数据库
+    update_local_db(data, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots)
+    schedule_done.set()
 
 
     # 打印所有表名
