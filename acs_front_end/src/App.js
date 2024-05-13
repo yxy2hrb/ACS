@@ -40,7 +40,7 @@ function App() {
         />
         <Route
           exact
-          path="/teacher/course"
+          path="/teacher/course/:course_id"
           element={
             <div>
               <Topbar />

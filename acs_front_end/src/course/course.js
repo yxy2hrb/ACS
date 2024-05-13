@@ -6,7 +6,9 @@ import { Select } from "antd";
 import { useReactToPrint } from "react-to-print";
 import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 export default function Course() {
+  const contentToPrint = useRef(null);
   const tmp = [
     {
       schedule_id: 123,
@@ -35,6 +37,9 @@ export default function Course() {
   const [course_html_state, Setcoursehtml] = useState("null");
   const [nowcourse_html_state, Setnowcoursehtml] = useState(0);
 
+  const params = useParams();
+  var id = params.course_id;
+
   const handleChange = (value) => {
     console.log(`selected ${value}`);
   };
@@ -48,7 +53,7 @@ export default function Course() {
   const week_num2str = ["周一", "周二", "周三", "周四", "周五"];
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:5000/api/teacher/courses/1")
+      .get("http://127.0.0.1:5000/api/teacher/courses/" + id)
       .then((response) => {
         console.log(response.data);
         SetCourse(response.data.courses);
@@ -177,13 +182,13 @@ export default function Course() {
   };
 
   return (
-    <div className="course">
+    <div className="course" id="print-content">
       <div className="detail">
         <div className="title">课程详细信息</div>
         <div className="detail_body">{nowcourse_html_state}</div>
       </div>
 
-      <div className="schedule" id="print-content">
+      <div className="schedule" ref={contentToPrint}>
         <div className="title">教师个人课表</div>
         <div className="body">
           <div className="title2">
@@ -221,7 +226,13 @@ export default function Course() {
               />
             </div>
             <div>
-              <button onClick={handlePrint}>打印</button>
+              <Button
+                style={{ marginLeft: 100, top: -4 }}
+                type="default"
+                onClick={handlePrint}
+              >
+                打印
+              </Button>
             </div>
           </div>
           <div className="courses">
