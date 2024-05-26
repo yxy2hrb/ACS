@@ -234,6 +234,12 @@ def update_classroom(id):
             return jsonify({"message": f"No campus found with name: {campus_name}", "data": []}), 404
         campus_id = campus['campus_id']
 
+        # 检查是否存在具有相同名称和校区的教室
+        existing_classroom = next((item for item in local_db_classrooms if item["classroom_name"] == classroom_name and item["campus_id"] == campus_id), None)
+        if existing_classroom is not None and existing_classroom["classroom_id"] != id:
+            # 如果存在，并且不是正在更新的教室，则拒绝更新
+            return jsonify({"message": "A classroom with the same name and campus already exists.", "data": []}), 400
+
         # 构建更新的数据
         update_data = {}
         if classroom_name is not None:
