@@ -91,7 +91,7 @@ export default function Course() {
       .catch((err) => {
         console.log(err);
       });
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     const nowcourse_html = [];
