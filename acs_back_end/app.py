@@ -341,7 +341,7 @@ def change_teacher_time():
 
         # 检查 available_classrooms 是否为空
         if len(available_classrooms) == 0:
-            return jsonify({"success": False,"message":"No available classrooms."}), 200
+            return jsonify({"success": True, "classes": []}), 200
 
         # 将 available_classrooms 转换为所需的格式
         available_classrooms_new = [{"campus_id": classroom['campus_id'], "capacity": classroom['capacity'], "class_id": classroom['classroom_id'], "classroom_name": classroom['classroom_name'], "equipment": classroom['equipment']} for classroom in available_classrooms]
@@ -386,7 +386,7 @@ def change_teacher_class():
             available_classes_new.append(new_c)
 
         if len(available_classes_new) == 0:
-            return jsonify({"success": False})  # 没有合适的教室
+            return jsonify({"success": True, "classes": []})  # 没有合适的教室
         else:
             return jsonify({"success": True, "classes": available_classes_new})  # 显示可切换的教室
     except Exception as e:
