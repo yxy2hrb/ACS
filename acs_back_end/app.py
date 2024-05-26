@@ -126,7 +126,7 @@ def create_classroom():
         # 查询 campus_id
         campus = next((item for item in local_db_campus if item["name"] == classroom_info['campus']), None)
         if campus is None:
-            raise Exception('Campus not found')
+            return jsonify({"message": f"No campus found with name: {classroom_info['campus']}", "data": []}), 404
         campus_id = campus['campus_id']
 
         # 更新 next_classroom_id
