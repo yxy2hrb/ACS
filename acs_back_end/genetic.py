@@ -7,7 +7,7 @@ from database import get_local_db, update_local_db
 from threading import Event
 import copy
 
-schedule_done = Event()
+#schedule_done = Event()
 
 def get_num(ss):
     a = ss//10
@@ -275,7 +275,7 @@ def schedule_interface():
 
     # 更新本地数据库
     update_local_db(data, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots)
-    schedule_done.set()
+    #schedule_done.set()
 
 
     # 打印所有表名
