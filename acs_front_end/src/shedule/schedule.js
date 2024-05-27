@@ -263,6 +263,42 @@ export default function Schedule() {
       key: "campus",
       dataIndex: "campus",
       width: "10%",
+      filters: [
+        {
+          text: "紫金港",
+          value: "紫金港",
+        },
+        {
+          text: "玉泉",
+          value: "玉泉",
+        },
+        {
+          text: "西溪",
+          value: "西溪",
+        },
+        {
+          text: "华家池",
+          value: "华家池",
+        },
+        {
+          text: "之江",
+          value: "之江",
+          
+        
+        },
+        {
+          text: "舟山",
+          value: "舟山",
+
+        },
+        {
+          text:   "海宁",
+          value:   "海宁",
+
+        }
+
+      ],
+      onFilter: (value, record) => record.campus.indexOf(value) === 0,
     },
     {
       title: "操作",
@@ -349,6 +385,31 @@ export default function Schedule() {
           text: "玉泉",
           value: "玉泉",
         },
+        {
+          text: "西溪",
+          value: "西溪",
+        },
+        {
+          text: "华家池",
+          value: "华家池",
+        },
+        {
+          text: "之江",
+          value: "之江",
+          
+        
+        },
+        {
+          text: "舟山",
+          value: "舟山",
+
+        },
+        {
+          text:   "海宁",
+          value:   "海宁",
+
+        }
+
       ],
       onFilter: (value, record) => record.campus.indexOf(value) === 0,
     },
@@ -407,6 +468,31 @@ export default function Schedule() {
           text: "玉泉",
           value: "玉泉",
         },
+        {
+          text: "西溪",
+          value: "西溪",
+        },
+        {
+          text: "华家池",
+          value: "华家池",
+        },
+        {
+          text: "之江",
+          value: "之江",
+          
+        
+        },
+        {
+          text: "舟山",
+          value: "舟山",
+
+        },
+        {
+          text:   "海宁",
+          value:   "海宁",
+
+        }
+        
       ],
       onFilter: (value, record) => record.campus.indexOf(value) === 0,
     },
