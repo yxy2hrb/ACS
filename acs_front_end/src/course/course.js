@@ -7,31 +7,10 @@ import { useReactToPrint } from "react-to-print";
 import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
 import axios from "axios";
 import { useParams } from "react-router-dom";
+import {Input} from "antd";
 export default function Course() {
   const contentToPrint = useRef(null);
-  const tmp = [
-    {
-      schedule_id: 123,
-      course_id: 123,
-      classroom_id: 123,
-      name: "计算机网络",
-      classroom: "曹东102",
-      time_slot: 21,
-      campus: "紫金港",
-      capacity: 30,
-    },
-    {
-      schedule_id: 133,
-      course_id: 133,
-      classroom_id: 133,
-      name: "计算机组成",
-      classroom: "曹东202",
-      time_slot: 14,
-      campus: "紫金港",
-      capacity: 30,
-    },
-  ];
-
+  const tmp=[]
   const [nowCourse, SetNowCourse] = useState(-1);
   const [course, SetCourse] = useState(tmp);
   const [course_html_state, Setcoursehtml] = useState("null");
@@ -93,6 +72,9 @@ export default function Course() {
       });
   }, [id]);
 
+
+  const [TeacherSearchid,setSearchid]=useState(-1)
+  const [teachername,setteachername]=useState("null")
   useEffect(() => {
     const nowcourse_html = [];
 
@@ -173,9 +155,40 @@ export default function Course() {
           <div className="ids">校区</div>
         </div>
       );
+
+      nowcourse_html.push(
+        <div>
+           <Input onChange={(v)=>{setteachername(v)}}placeholder="教师名称" />
+           <Button onClick={
+            ()=>{
+              const data={
+                name:"吴磊"
+            }
+              axios
+              .post("http://127.0.0.1:5000/api/test/searchid",data)
+              .then((response) => {
+                console.log(response.data);
+                if(response.data.success){
+                  setSearchid(response.data.id)
+                }else{
+                  console.log("error")
+                }
+              
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+            }
+           }style={{height:30,color:"black"}}type="primary">搜索</Button>
+           <div>
+            对应id:{TeacherSearchid}
+           </div>
+        </div>
+       
+      )
     }
     Setnowcoursehtml(nowcourse_html);
-  }, [nowCourse]);
+  }, [nowCourse,TeacherSearchid]);
 
   const handlePrint = () => {
     window.print();
@@ -258,3 +271,4 @@ export default function Course() {
     </div>
   );
 }
+
