@@ -75,6 +75,7 @@ export default function Course() {
 
   const [TeacherSearchid,setSearchid]=useState(-1)
   const [teachername,setteachername]=useState("null")
+  var myteachername="null"
   useEffect(() => {
     const nowcourse_html = [];
 
@@ -155,21 +156,31 @@ export default function Course() {
           <div className="ids">校区</div>
         </div>
       );
-
+     
       nowcourse_html.push(
         <div>
-           <Input onChange={(v)=>{setteachername(v)}}placeholder="教师名称" />
+           <Input onChange={(e)=>{
+           // setteachername(e.target.value)
+            myteachername=e.target.value
+            console.log(e.target.value)
+            }}placeholder="教师名称" />
            <Button onClick={
             ()=>{
               const data={
-                name:"吴磊"
+                name:myteachername
             }
+          //  console.log(data)
               axios
               .post("http://127.0.0.1:5000/api/test/searchid",data)
               .then((response) => {
                 console.log(response.data);
                 if(response.data.success){
                   setSearchid(response.data.id)
+                  if(response.data.id==-1){
+                    alert("没有此教师")
+                  }else{
+                    alert("查询成功")
+                  }
                 }else{
                   console.log("error")
                 }
