@@ -8,6 +8,7 @@ import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import {Input} from "antd";
+import { useNavigate } from 'react-router-dom';
 export default function Course() {
   const contentToPrint = useRef(null);
   const tmp=[]
@@ -73,6 +74,7 @@ export default function Course() {
   }, [id]);
 
 
+  const navigate = useNavigate();
   const [TeacherSearchid,setSearchid]=useState(-1)
   const [teachername,setteachername]=useState("null")
   var myteachername="null"
@@ -180,6 +182,7 @@ export default function Course() {
                     alert("没有此教师")
                   }else{
                     alert("查询成功")
+                   navigate("/teacher/course/"+id);
                   }
                 }else{
                   console.log("error")
@@ -191,9 +194,7 @@ export default function Course() {
               });
             }
            }style={{height:30,color:"black"}}type="primary">搜索</Button>
-           <div>
-            对应id:{TeacherSearchid}
-           </div>
+        
         </div>
        
       )
