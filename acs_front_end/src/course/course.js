@@ -31,6 +31,7 @@ export default function Course() {
     "19:00-20:30",
   ];
   const week_num2str = ["周一", "周二", "周三", "周四", "周五"];
+  const [SSSteachername,SetSSS]=useState("null")
   useEffect(() => {
     axios
       .get("http://127.0.0.1:5000/api/teacher/courses/" + id)
@@ -71,9 +72,23 @@ export default function Course() {
       .catch((err) => {
         console.log(err);
       });
+
+    
   }, [id]);
+///api/teacher/name/
+useEffect(() => {
+  axios
+    .get("http://127.0.0.1:5000/api/teacher/name/" + id)
+    .then((response) => {
+      console.log(response.data);
+      SetSSS(response.data.name);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 
-
+  
+}, [id]);
   const navigate = useNavigate();
   const [TeacherSearchid,setSearchid]=useState(-1)
   const [teachername,setteachername]=useState("null")
@@ -182,7 +197,7 @@ export default function Course() {
                     alert("没有此教师")
                   }else{
                     alert("查询成功")
-                   navigate("/teacher/course/"+id);
+                   navigate("/teacher/course/"+response.data.id);
                   }
                 }else{
                   console.log("error")
@@ -214,7 +229,7 @@ export default function Course() {
       </div>
 
       <div className="schedule" ref={contentToPrint}>
-        <div className="title">教师个人课表</div>
+        <div className="title">{SSSteachername}课表</div>
         <div className="body">
           <div className="title2">
             <div>
