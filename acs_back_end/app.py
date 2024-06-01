@@ -88,6 +88,24 @@ def get_classrooms():
     except Exception as e:
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB", "data": []}), 500
+    
+@app.route('/api/classrooms/name/<int:classroom_id>', methods=['GET'])
+@cross_origin()
+def get_classroom_name(classroom_id):
+    try:
+        local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
+        classrooms = copy.deepcopy(local_db_classrooms)
+
+        # 在教室列表中查找匹配的教室ID
+        for classroom in classrooms:
+            if classroom['classroom_id'] == classroom_id:
+                return jsonify({"name": classroom['classroom_name']})  # 返回教室名称
+
+        # 如果没有找到匹配的教室ID，返回一个错误消息
+        return jsonify({"message": f"No classroom found with ID {classroom_id}"}), 404
+    except Exception as e:
+        print('An error occurred while trying to connect to MongoDB', e)
+        return jsonify({"message": "An error occurred while trying to connect to MongoDB"}), 500
 
 @app.route('/api/test/searchid', methods=['POST'])
 @cross_origin()
