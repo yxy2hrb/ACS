@@ -75,8 +75,20 @@ export default function Course() {
 
     
   }, [id]);
+///api/teacher/name/
+useEffect(() => {
+  axios
+    .get("http://127.0.0.1:5000/api/teacher/name/" + id)
+    .then((response) => {
+      console.log(response.data);
+      SetSSS(response.data.name);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 
-
+  
+}, [id]);
   const navigate = useNavigate();
   const [TeacherSearchid,setSearchid]=useState(-1)
   const [teachername,setteachername]=useState("null")
