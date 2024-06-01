@@ -6,6 +6,7 @@ import Topbar from "./topbar/topbar";
 import Course from "./course/course";
 import Classroom from "./classroom/classroom";
 import RoomList from "./list/list";
+import ClassroomCourse from "./course/classroomCourse";
 import {
   BrowserRouter as Router,
   Route,
@@ -68,6 +69,17 @@ function App() {
               <Topbar />
               <Nav />
               <RoomList></RoomList>
+            </div>
+          }
+        />
+        <Route
+          exact
+          path="/admin/classroom/course/:classroom_id"
+          element={
+            <div>
+              <Topbar />
+              <Nav />
+              <ClassroomCourse></ClassroomCourse>
             </div>
           }
         />
