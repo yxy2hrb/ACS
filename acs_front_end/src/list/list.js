@@ -116,7 +116,7 @@ export default function RoomList() {
     try {
       const body = {
         classroom_id: values.record_id,
-        classroom_name: values.classroomName,
+        classroomName: values.classroomName,
         campus: values.campus,
         equipment: values.equipment,
         // capacity: Number(values.capacity),
