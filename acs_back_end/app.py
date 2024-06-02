@@ -350,8 +350,9 @@ def update_classroom(id):
         if equipment is not None:
             update_data['equipment'] = equipment
 
-        # 更新本地数据
+        # 查找匹配的教室
         classroom = next((item for item in local_db_classrooms if item["classroom_id"] == id), None)
+
         if classroom is None:
             # 如果没有找到匹配的教室，返回 404 状态码
             return jsonify({"message": f"No classroom found with id: {id}", "data": []}), 404
@@ -360,28 +361,21 @@ def update_classroom(id):
             if classroom['classroom_name'] == classroom_name and classroom['campus_id'] == campus_id and classroom['equipment'] == equipment:
                 return jsonify({"message": "The classroom information is already up to date", "data": []}), 400
 
-            # 更新教室信息
-            update_thread = threading.Thread(target=classrooms_collection.update_one({'classroom_id': id}, {'$set': update_data}))
+            # 更新本地数据库
+            with data_lock:
+                # 更新本地数据库中的教室信息
+                for item in local_db_classrooms:
+                    if item["classroom_id"] == id:
+                        item.update(update_data)
+                update_local_db(local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots)
+
+            # 更新 MongoDB
+            def update_mongodb_classrooms():
+                classrooms_collection.update_one({'classroom_id': id}, {'$set': update_data})
+
+            update_thread = threading.Thread(target=update_mongodb_classrooms)
             update_thread.start()
-            # 创建新线程
-            
-            # # # # 在后台调用遗传算法重新排课
-            # # # threading.Thread(target=schedule_interface).start()
-            
-            # # # # 更新本地数据
-            # # # def update_local_db():
-            # # #     with data_lock:  # 获取锁
-            # # #         # 从 MongoDB 获取新插入的教室的完整信息
-            # # #         updated_classroom = classrooms_collection.find_one({'classroom_id': id})
-            # # #         index = next((index for (index, d) in enumerate(local_db_classrooms) if d["classroom_id"] == id), None)
-            # # #         local_db_classrooms[index] = updated_classroom
-            # # # threading.Thread(target=update_local_db).start()
-            
-            # # # 在后台下载排课表到本地
-            # # update_thread = threading.Thread(target=update_mongodb)  # 创建新线程
-            # update_thread.start()  # 开始新线程
-            
-            # 如果成功更新教室信息，返回 200 状态码
+
             return jsonify({"message": f"Successfully updated classroom with id: {id}", "data": []}), 200
     except Exception as e:
         print('An error occurred while trying to update classroom', e)
