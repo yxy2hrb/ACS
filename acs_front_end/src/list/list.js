@@ -85,7 +85,7 @@ export default function RoomList() {
       record_id: record.id,
       classroomName: record.name,
       campus: record.campus,
-      capacity: record.capacity,
+      // capacity: record.capacity,
       equipment: record.equipment.split(", "),
     });
     setIsModalVisible(true);
@@ -104,7 +104,7 @@ export default function RoomList() {
     record_id: 1000000,
     classroomName: "",
     campus: "",
-    capacity: "",
+    // capacity: "",
     equipment: [],
   });
 
@@ -119,7 +119,7 @@ export default function RoomList() {
         classroom_name: values.classroomName,
         campus: values.campus,
         equipment: values.equipment,
-        capacity: Number(values.capacity),
+        // capacity: Number(values.capacity),
       };
       console.log("Put body", body);
       const response = await axios.put(
@@ -231,13 +231,13 @@ export default function RoomList() {
                 </Select>
               </Form.Item>
 
-              <Form.Item
+              {/* <Form.Item
                 label="教室容量"
                 name="capacity"
                 rules={[{ required: true, message: "请输入教室容量" }]}
               >
                 <Input type="number" />
-              </Form.Item>
+              </Form.Item> */}
 
               <Form.Item
                 label="教室设备"
