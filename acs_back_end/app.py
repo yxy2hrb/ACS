@@ -25,6 +25,7 @@ campus_collection = database['campus']
 teacher_collection = database['teacher']
 classrooms_collection = database['classrooms']
 time_slots_collection = database['time_slots']  # 新增
+user_collection = database['user']
 
 # 创建一个锁
 data_lock = threading.Lock()
@@ -60,6 +61,29 @@ def update_mongodb():
 
     print("Schedule result update completed successfully.")
 
+@app.route('/api/user/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    number = data.get('number')
+    password = data.get('password')
+
+    if not number or not password:
+        return jsonify({"error": "Missing number or password"}), 400
+
+    # 从数据库中查找用户
+    user = user_collection.find_one({"number": number})
+
+    if user and user['password'] == password:  # 直接比较密码是否相同
+        # 成功登录，返回用户信息
+        return jsonify({
+            "id": user.get('id', None),  # 如果没有id，则返回None
+            "number": user['number'],
+            "auth": user['auth']
+        }), 200
+    else:
+        # 用户不存在或密码错误
+        return jsonify({"error": "Invalid number or password"}), 401
+    
 # 获取课室信息
 @app.route('/api/classrooms', methods=['GET'])
 @cross_origin()
