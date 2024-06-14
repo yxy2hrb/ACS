@@ -753,7 +753,7 @@ def reschedule_classes():
 
     # 在新线程中更新 MongoDB
     threading.Thread(target=update_mongodb).start()
-    threading.Thread(target=modify_course_with_schedule(schedule_res)).start()
+    threading.Thread(target=modify_course_list_with_schedule(schedule_res)).start()
 
     return jsonify(result)
 
