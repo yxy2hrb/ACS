@@ -9,6 +9,20 @@ import threading
 import time
 import re  # 导入正则表达式模块
 from threading import Event
+import requests
+import json
+
+# 登录请求
+login_url = "http://localhost:8000/api/user/login/"
+login_data = {
+    "number": "000000",
+    "password": "8b44047b4fc99d0b69be05961d31a8e3bb6de5b005a9e723415b0d323f69b53f"
+}
+
+login_response = requests.post(login_url, data=login_data)
+login_response_data = login_response.json()
+
+print(login_response_data)
 
 #schedule_done = Event()
 app = Flask(__name__)
@@ -25,8 +39,159 @@ campus_collection = database['campus']
 teacher_collection = database['teacher']
 classrooms_collection = database['classrooms']
 time_slots_collection = database['time_slots']  # 新增
-user_collection = database['user']
 
+
+# 从登录响应的data字典中提取token
+token = login_response_data['data'].get('token')
+
+print(token)
+
+# 使用提取的token发起课程列表请求，注意Authorization头的格式
+course_list_url = "http://localhost:8000/api/course/list/"
+headers = {
+    "Authorization": token  # 注意这里的改动
+}
+
+course_list_response = requests.get(course_list_url, headers=headers)
+course_list_response_data = course_list_response.text
+
+print(course_list_response_data)
+data = json.loads(course_list_response_data)
+courses_collection.delete_many({})
+for item in data['data']:
+    # 计算teacher_id
+    teacher_id = int(item['teacher']) - 321010 + 36
+    # 修正class_id的范围
+    class_id = int(item['id']) - 1
+    # 创建新的字典
+    new_doc = {
+        "class_id": class_id,
+        "teacher_id": teacher_id,
+        "class_name": item['name'],
+        "campus_id": item['campus']
+    }
+    # 插入到MongoDB
+    courses_collection.insert_one(new_doc)
+
+print("course插入完成")
+
+# 添加用户列表请求，使用Authorization头
+user_list_url = "http://localhost:8000/api/user/list/"
+user_list_headers = {
+    "Authorization": token
+}
+
+user_list_response = requests.get(user_list_url, headers=user_list_headers)
+user_list_response_data = user_list_response.text
+
+print(user_list_response_data)
+# 将JSON字符串解析为Python字典
+data = json.loads(user_list_response_data)
+
+# 提取auth值为1的项（在这个例子中，不会找到任何匹配项）
+auth_one_items = [item for item in data['data'] if item['auth'] == 1]
+
+print(auth_one_items)
+# 删除teacher集合中的所有现有文档
+teacher_collection.delete_many({})
+
+for item in auth_one_items:
+    # 计算teacher_id
+    teacher_id = int(item['number']) - 321010 + 36
+    # 创建新的字典
+    new_doc = {
+        "teacher_id": teacher_id,
+        "teacher_name": item['name']
+    }
+    # 插入到MongoDB
+    teacher_collection.insert_one(new_doc)
+
+print("teacher插入完成")
+
+courses_collection = database['courses']
+teacher_collection = database['teacher']
+schedule_res = list(schedule_res_collection.find({}))
+courses = list(courses_collection.find({}))
+campus = list(campus_collection.find({}))
+teacher = list(teacher_collection.find({}))
+classrooms = list(classrooms_collection.find({}))
+time_slots = list(time_slots_collection.find({}))  # 新增
+update_local_db(schedule_res, courses, campus, teacher, classrooms, time_slots)
+
+def update_mongodb():
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
+    # 删除 MongoDB 中的原有排课表
+    #schedule_done.wait()
+    schedule_res_collection.delete_many({})
+
+    # 将本地数据写入 MongoDB
+    for document in local_db_schedule_res:
+        schedule_res_collection.insert_one(document)
+
+    print("Schedule result update completed successfully.")
+
+# 新的接口URL
+modify_course_list_url = "http://localhost:8000/api/course/modify_list/"
+
+def modify_course_list_with_schedule(schedule_res):
+    # 获取课程列表
+    course_list_response = requests.get(course_list_url, headers=headers)
+    course_list_response_data = course_list_response.json()
+    
+    # 准备一次性将所有课程的时间字段设置为default的列表
+    courses_to_set_default = []
+    for course in course_list_response_data['data']:
+        courses_to_set_default.append({
+            "id": course['id'],
+            "name": course['name'],
+            "teacher": course['teacher'],
+            "credit": course['credit'],
+            "content": course['content'],
+            "total": course['total'],
+            "check_rule": course['check_rule'],
+            "time": "default",  # 假设我们要修改的字段是时间
+            "campus":course['campus']
+        })
+    
+    # 发起一次性将所有课程时间设置为default的请求
+    requests.post(modify_course_list_url, json={"courses": courses_to_set_default}, headers=user_list_headers)
+    
+    # 准备根据schedule_res修改的课程数据列表
+    courses_to_modify = []
+    for schedule in schedule_res:
+        class_id = schedule['class_id']
+        new_time = schedule['time']
+        
+        # 从课程列表中找到对应的课程
+        course_to_modify = next((item for item in courses_to_set_default if item['id'] == class_id+1), None)
+        
+        if not course_to_modify:
+            print(f"未找到指定ID({class_id})的课程")
+            continue
+        
+        # 根据当前字段值更新时间字段
+        existing_time = course_to_modify['time']
+        if existing_time == "default":
+            course_to_modify['time'] = new_time
+        else:
+            course_to_modify['time'] = existing_time + ";" + new_time
+        
+        # 注意：这里不需要再次添加到修改列表，因为courses_to_set_default已经被更新
+        
+    # 发起一次性修改请求
+    modify_response = requests.post(modify_course_list_url, json={"courses": courses_to_set_default}, headers=user_list_headers)
+    print(modify_response.text)
+
+def reschedule():
+    schedule_interface()
+    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
+    schedule_res = local_db_schedule_res.copy()  # 使用本地数据
+
+    # 在新线程中更新 MongoDB
+    threading.Thread(target=update_mongodb).start()
+    threading.Thread(target=modify_course_list_with_schedule(schedule_res)).start()
+
+reschedule()
 # 创建一个锁
 data_lock = threading.Lock()
 global next_classroom_id  
@@ -49,41 +214,6 @@ update_thread = threading.Thread(target=update_local_db_from_mongodb)
 update_thread.start()
 
 
-def update_mongodb():
-    local_db_schedule_res, local_db_courses, local_db_campus, local_db_teacher, local_db_classrooms, local_db_time_slots = get_local_db()
-    # 删除 MongoDB 中的原有排课表
-    #schedule_done.wait()
-    schedule_res_collection.delete_many({})
-
-    # 将本地数据写入 MongoDB
-    for document in local_db_schedule_res:
-        schedule_res_collection.insert_one(document)
-
-    print("Schedule result update completed successfully.")
-
-@app.route('/api/user/login/', methods=['POST'])
-def login():
-    data = request.get_json()
-    number = data.get('number')
-    password = data.get('password')
-
-    if not number or not password:
-        return jsonify({"error": "Missing number or password"}), 400
-
-    # 从数据库中查找用户
-    user = user_collection.find_one({"number": number})
-
-    if user and user['password'] == password:  # 直接比较密码是否相同
-        # 成功登录，返回用户信息
-        return jsonify({
-            "id": user.get('id', None),  # 如果没有id，则返回None
-            "number": user['number'],
-            "auth": user['auth']
-        }), 200
-    else:
-        # 用户不存在或密码错误
-        return jsonify({"error": "Invalid number or password"}), 401
-    
 # 获取课室信息
 @app.route('/api/classrooms', methods=['GET'])
 @cross_origin()
@@ -624,6 +754,7 @@ def reschedule_classes():
 
     # 在新线程中更新 MongoDB
     threading.Thread(target=update_mongodb).start()
+    threading.Thread(target=modify_course_list_with_schedule(schedule_res)).start()
 
     return jsonify(result)
 
@@ -667,10 +798,7 @@ def get_schedule():
 
     return jsonify(result)
 
-@app.route('/')
-@cross_origin()
-def index():
-    return 'Index Page'
 
 if __name__ == '__main__':
     app.run(debug=True)
+    
