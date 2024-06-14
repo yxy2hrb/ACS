@@ -1,11 +1,13 @@
 "use client";
 import React from "react";
 import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import "./classroom.css";
 import { Form, Input, message, Button, Select } from "antd";
 import axios from "axios";
 const { Option } = Select;
 export default function Classroom() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     classroomName: "",
     campus: "",
@@ -18,16 +20,21 @@ export default function Classroom() {
   };
 
   const onFinish = async (values) => {
-    console.log("Received values:", values);
+    const body = {
+      ...values,
+      capacity: Number(values.capacity)
+    }
+    console.log("Received values:", body);
     try {
       const response = await axios.post(
         "http://127.0.0.1:5000/api/classrooms",
-        values
+        body
       );
       console.log(response.status);
       if (response.status === 200 || response.status === 201)
         message.success(response.data["message"]);
       else console.log(response);
+      navigate('/admin/classroom/list');
     } catch (error) {
       console.log(error);
       message.error("出错了");

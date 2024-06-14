@@ -26,6 +26,9 @@ export default function Nav({ nowstate }) {
           <Menu.Item key="/admin/classroom/list">
             <Link to="/admin/classroom/list">教室信息</Link>
           </Menu.Item>
+          <Menu.Item key="/admin/classroom/course">
+            <Link to="/admin/classroom/course/11">教室课表</Link>
+          </Menu.Item>
         </Menu>
       </div>
     </div>

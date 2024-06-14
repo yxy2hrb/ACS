@@ -18,7 +18,7 @@ export default function TNav({ nowstate }) {
             <Link to="/teacher">首页</Link>
           </Menu.Item>
           <Menu.Item key="/teacher/course">
-            <Link to="/teacher/course">教师课表</Link>
+            <Link to="/teacher/course/7">教师课表</Link>
           </Menu.Item>
         </Menu>
       </div>

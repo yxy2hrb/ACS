@@ -303,6 +303,7 @@ def get_teacher_name(teacher_id):
         print('An error occurred while trying to connect to MongoDB', e)
         return jsonify({"message": "An error occurred while trying to connect to MongoDB"}), 500
 
+
 @app.route('/api/classrooms/courses/<int:classroom_id>', methods=['GET'])
 @cross_origin()
 def get_classroom_courses(classroom_id):
@@ -801,4 +802,3 @@ def get_schedule():
 if __name__ == '__main__':
     app.run(debug=True)
     
-

@@ -1,0 +1,35 @@
+/* src/pages/LoginPage.css */
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 92vh ;
+    width: 100vw;
+    /* background: url('../assets/haobo2.jpg') no-repeat center center fixed; */
+    background-size: cover;
+    overflow: hidden;
+  }
+  
+  .login-title{
+    /* height: 40px; */
+    margin-top: -100px;
+    font-size: 24px;
+    padding: 20px;
+  }
+
+  .login-container {
+    background: rgba(255, 255, 255, 0.9); /* 调整透明度 */
+    padding: 40px; /* 调整内边距 */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 500px; /* 设置容器宽度 */
+  }
+  
+  .login-form {
+    max-width: 500px; /* 配合容器宽度 */
+  }
+  
+  .login-form-button {
+    width: 100%;
+  }

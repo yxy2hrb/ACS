@@ -6,34 +6,21 @@ import { Select } from "antd";
 import { useReactToPrint } from "react-to-print";
 import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
 import axios from "axios";
+import { useParams } from "react-router-dom";
+import {Input} from "antd";
+import { useNavigate, useLocation } from 'react-router-dom';
 export default function Course() {
-  const tmp = [
-    {
-      schedule_id: 123,
-      course_id: 123,
-      classroom_id: 123,
-      name: "计算机网络",
-      classroom: "曹东102",
-      time_slot: 21,
-      campus: "紫金港",
-      capacity: 30,
-    },
-    {
-      schedule_id: 133,
-      course_id: 133,
-      classroom_id: 133,
-      name: "计算机组成",
-      classroom: "曹东202",
-      time_slot: 14,
-      campus: "紫金港",
-      capacity: 30,
-    },
-  ];
+  const { state } = useLocation();
 
+  const contentToPrint = useRef(null);
+  const tmp=[]
   const [nowCourse, SetNowCourse] = useState(-1);
   const [course, SetCourse] = useState(tmp);
   const [course_html_state, Setcoursehtml] = useState("null");
   const [nowcourse_html_state, Setnowcoursehtml] = useState(0);
+
+  const params = useParams();
+  var id = params.course_id;
 
   const handleChange = (value) => {
     console.log(`selected ${value}`);
@@ -46,9 +33,10 @@ export default function Course() {
     "19:00-20:30",
   ];
   const week_num2str = ["周一", "周二", "周三", "周四", "周五"];
+  const [SSSteachername,SetSSS]=useState("null")
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:5000/api/teacher/courses/1")
+      .get("http://127.0.0.1:5000/api/teacher/courses/" + id)
       .then((response) => {
         console.log(response.data);
         SetCourse(response.data.courses);
@@ -86,8 +74,27 @@ export default function Course() {
       .catch((err) => {
         console.log(err);
       });
-  }, []);
 
+    
+  }, [id]);
+///api/teacher/name/
+useEffect(() => {
+  axios
+    .get("http://127.0.0.1:5000/api/teacher/name/" + id)
+    .then((response) => {
+      console.log(response.data);
+      SetSSS(response.data.name);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+
+  
+}, [id]);
+  const navigate = useNavigate();
+  const [TeacherSearchid,setSearchid]=useState(-1)
+  const [teachername,setteachername]=useState("null")
+  var myteachername="null"
   useEffect(() => {
     const nowcourse_html = [];
 
@@ -168,23 +175,63 @@ export default function Course() {
           <div className="ids">校区</div>
         </div>
       );
+     
+      nowcourse_html.push(
+        <div>
+           <Input onChange={(e)=>{
+           // setteachername(e.target.value)
+            myteachername=e.target.value
+            console.log(e.target.value)
+            }}placeholder="教师名称" />
+           <Button onClick={
+            ()=>{
+              const data={
+                name:myteachername
+            }
+          //  console.log(data)
+              axios
+              .post("http://127.0.0.1:5000/api/test/searchid",data)
+              .then((response) => {
+                console.log(response.data);
+                if(response.data.success){
+                  setSearchid(response.data.id)
+                  if(response.data.id==-1){
+                    alert("没有此教师")
+                  }else{
+                    alert("查询成功")
+                   navigate("/teacher/course/"+response.data.id);
+                  }
+                }else{
+                  console.log("error")
+                }
+              
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+            }
+           }style={{height:30,color:"black"}}type="primary">搜索</Button>
+        
+        </div>
+       
+      )
     }
     Setnowcoursehtml(nowcourse_html);
-  }, [nowCourse]);
+  }, [nowCourse,TeacherSearchid]);
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="course">
+    <div className="course" id="print-content">
       <div className="detail">
         <div className="title">课程详细信息</div>
         <div className="detail_body">{nowcourse_html_state}</div>
       </div>
 
-      <div className="schedule" id="print-content">
-        <div className="title">教师个人课表</div>
+      <div className="schedule" ref={contentToPrint}>
+        <div className="title">{SSSteachername}课表</div>
         <div className="body">
           <div className="title2">
             <div>
@@ -221,7 +268,13 @@ export default function Course() {
               />
             </div>
             <div>
-              <button onClick={handlePrint}>打印</button>
+              <Button
+                style={{ marginLeft: 100, top: -4 }}
+                type="default"
+                onClick={handlePrint}
+              >
+                打印
+              </Button>
             </div>
           </div>
           <div className="courses">
@@ -247,3 +300,4 @@ export default function Course() {
     </div>
   );
 }
+
