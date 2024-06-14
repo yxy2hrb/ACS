@@ -8,8 +8,10 @@ import { Button, Drawer, Menu, Space, Table, Tag } from "antd";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import {Input} from "antd";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 export default function Course() {
+  const { state } = useLocation();
+
   const contentToPrint = useRef(null);
   const tmp=[]
   const [nowCourse, SetNowCourse] = useState(-1);
